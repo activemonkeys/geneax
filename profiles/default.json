@@ -1,0 +1,51 @@
+{
+    "description": "Standaard profiel voor Next.js + Prisma project met src directory",
+    "outputFile": "project-content.txt",
+    "global": {
+        "extensions": [
+            ".ts",
+            ".tsx",
+            ".js",
+            ".jsx",
+            ".mjs",
+            ".json",
+            ".prisma",
+            ".css",
+            ".md"
+        ],
+        "excludeDirs": [
+            "node_modules",
+            ".next",
+            ".git",
+            ".turbo",
+            "dist",
+            "build",
+            "coverage",
+            ".vercel",
+            ".cache",
+            "out"
+        ],
+        "excludeFiles": [
+            "next-env.d.ts",
+            "package-lock.json",
+            "pnpm-lock.yaml",
+            "yarn.lock",
+            "*.map",
+            "*.d.ts"
+        ]
+    },
+    "include": ["src", "prisma", "public"],
+    "rootFiles": [
+        "package.json",
+        "tsconfig.json",
+        "next.config.js",
+        "next.config.mjs",
+        "next.config.ts",
+        "tailwind.config.js",
+        "tailwind.config.ts",
+        "postcss.config.js",
+        "postcss.config.mjs",
+        ".env.example",
+        "README.md"
+    ]
+}

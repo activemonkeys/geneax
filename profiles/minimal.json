@@ -1,0 +1,34 @@
+{
+    "description": "Alleen de essentiële applicatie code (geen config, geen styles)",
+    "outputFile": "project-content-minimal.txt",
+    "global": {
+        "extensions": [".ts", ".tsx"],
+        "excludeDirs": [
+            "node_modules",
+            ".next",
+            ".git",
+            "dist",
+            "build",
+            "coverage",
+            "__tests__",
+            "tests",
+            "test"
+        ],
+        "excludeFiles": [
+            "next-env.d.ts",
+            "*.test.ts",
+            "*.test.tsx",
+            "*.spec.ts",
+            "*.spec.tsx"
+        ]
+    },
+    "include": [
+        "src/app",
+        "src/components",
+        "src/lib",
+        "src/hooks",
+        "src/actions",
+        "src/utils"
+    ],
+    "rootFiles": []
+}

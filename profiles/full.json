@@ -1,0 +1,51 @@
+{
+    "description": "Volledig overzicht van alle bronbestanden in het project",
+    "outputFile": "project-content-full.txt",
+    "global": {
+        "extensions": [
+            ".ts",
+            ".tsx",
+            ".js",
+            ".jsx",
+            ".mjs",
+            ".json",
+            ".prisma",
+            ".css",
+            ".scss",
+            ".md",
+            ".mdx",
+            ".sql",
+            ".graphql",
+            ".env"
+        ],
+        "excludeDirs": [
+            "node_modules",
+            ".next",
+            ".git",
+            ".turbo",
+            "dist",
+            "build",
+            "coverage",
+            ".vercel",
+            ".cache",
+            "out"
+        ],
+        "excludeFiles": [
+            "next-env.d.ts",
+            "package-lock.json",
+            "pnpm-lock.yaml",
+            "yarn.lock"
+        ]
+    },
+    "rootFiles": [
+        "docker-compose.yml",
+        "package.json",
+        "tsconfig.json",
+        "next.config.ts",
+        "prisma.config.ts",
+        "postcss.config.mjs",
+        "eslint.config.mjs",
+        "prettier.config.mjs",
+        "README.md"
+    ]
+}

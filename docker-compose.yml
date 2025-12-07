@@ -1,0 +1,32 @@
+services:
+  # De database service
+  postgres:
+    image: postgres:17-alpine
+    container_name: geneax_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-geneax_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geneax_password}
+      POSTGRES_DB: ${POSTGRES_DB:-geneax}
+    ports:
+      # Mapt poort 5432 in de container naar 5432 op je Windows PC
+      - '5433:5432'
+    volumes:
+      # Zorgt dat je data bewaard blijft als je de container stopt
+      - postgres_data:/var/lib/postgresql/data
+
+  # De beheer interface (vervanging voor de Windows pgAdmin app)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: geneax_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@geneax.nl
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '8080:80'
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

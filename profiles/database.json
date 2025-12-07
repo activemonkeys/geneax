@@ -1,0 +1,18 @@
+{
+    "description": "Focus op database-gerelateerde bestanden (Prisma, actions, lib)",
+    "outputFile": "project-content-database.txt",
+    "global": {
+        "extensions": [".ts", ".tsx", ".prisma", ".sql", ".json"],
+        "excludeDirs": [
+            "node_modules",
+            ".next",
+            ".git",
+            "dist",
+            "build",
+            "components"
+        ],
+        "excludeFiles": ["next-env.d.ts"]
+    },
+    "include": ["prisma", "src/lib", "src/actions", "src/db", "src/services"],
+    "rootFiles": ["package.json"]
+}
