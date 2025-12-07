@@ -1,185 +1,128 @@
-// Bestand: src/types/index.ts
+// src/types/index.ts
 
-import type { RecordType, PersonRole } from '@/generated/prisma/client';
+import type { RecordType, PersonRole, HarvestStatus } from '@/generated/prisma/client';
 
-export type { RecordType, PersonRole };
+// Re-export Prisma types
+export type { RecordType, PersonRole, HarvestStatus };
 
-// ============================================
-// PARSED DATA TYPES (Wat we opslaan)
-// ============================================
+// A2A XML Structure with namespace support
+export interface A2AData {
+    Source?: any;
+    Person?: any;
+    Relation?: any;
+    Event?: any;
+    'a2a:Source'?: any;
+    'a2a:Person'?: any;
+    'a2a:Relation'?: any;
+    'a2a:Event'?: any;
+    [key: string]: any;
+}
 
+export interface A2ASource {
+    SourceType?: any;
+    SourceDate?: any;
+    SourcePlace?: any;
+    SourceIndexDate?: any;
+    'a2a:SourceType'?: any;
+    'a2a:SourceDate'?: any;
+    'a2a:SourcePlace'?: any;
+    'a2a:SourceIndexDate'?: any;
+    [key: string]: any;
+}
+
+export interface A2APerson {
+    PersonName?: any;
+    'a2a:PersonName'?: any;
+    Age?: any;
+    'a2a:Age'?: any;
+    Occupation?: any;
+    'a2a:Occupation'?: any;
+    Residence?: any;
+    'a2a:Residence'?: any;
+    [key: string]: any;
+}
+
+export interface A2ARelation {
+    RelationType?: any;
+    'a2a:RelationType'?: any;
+    Person?: any;
+    'a2a:Person'?: any;
+    [key: string]: any;
+}
+
+export interface A2AEvent {
+    EventDate?: any;
+    'a2a:EventDate'?: any;
+    [key: string]: any;
+}
+
+// Parsed Record Structure
 export interface ParsedRecord {
     externalId: string;
     sourceCode: string;
     setSpec: string;
-    recordType: RecordType;
+    recordType: string;
     eventYear: number;
-    eventDate?: Date;
+    eventDate?: string;
     eventPlace?: string;
-    // Gebruik 'unknown' in plaats van 'any' voor type safety
-    rawData: Record<string, unknown>;
-    persons: ParsedPerson[];
+    persons: Array<{
+        role: string;
+        givenName?: string;
+        surname?: string;
+        patronym?: string;
+        prefix?: string;
+        age?: number;
+        occupation?: string;
+        residence?: string;
+    }>;
+    rawData: any;
 }
 
-export interface ParsedPerson {
-    role: PersonRole;
-    givenName?: string;
-    surname?: string;
-    patronym?: string;
-    prefix?: string;
-    age?: number;
-    birthYear?: number;
-    occupation?: string;
-    residence?: string;
-}
-
-// ============================================
-// A2A XML TYPES (Wat we ontvangen)
-// ============================================
-
-export interface A2ARecord {
-    A2A?: A2AData;
-    'a2a:A2A'?: A2AData;
-}
-
-export interface A2AData {
-    Source?: A2ASource;
-    Person?: A2APerson | A2APerson[];
-    Relation?: A2ARelation | A2ARelation[];
-    Event?: A2AEvent;
-}
-
-export interface A2ASource {
-    SourceType?: A2ATextField;
-    SourceReference?: {
-        DocumentNumber?: A2ATextField;
-        RegistryNumber?: A2ATextField;
-        Place?: A2ATextField;
-        InstitutionName?: A2ATextField;
-    };
-    SourceDate?: {
-        Date?: A2ATextField;
-        Year?: A2ATextField;
-        Month?: A2ATextField;
-        Day?: A2ATextField;
-    };
-    SourcePlace?: {
-        Place?: A2ATextField;
-        Country?: A2ATextField;
-    };
-    RecordGUID?: A2ATextField;
-    RecordIdentifier?: A2ATextField;
-    SourceIndexDate?: {
-        From?: A2ATextField;
-        To?: A2ATextField;
-    };
-    SourceLastChangeDate?: A2ATextField;
-    SourceDigitalOriginal?: A2ATextField;
-    SourceAvailableScans?: {
-        Scan?: A2AScan | A2AScan[];
-    };
-}
-
-export interface A2APerson {
-    '@_pid'?: string;
-    PersonName?: A2APersonName;
-    Gender?: A2ATextField;
-    Age?: A2ATextField;
-    BirthDate?: A2ADateField;
-    BirthPlace?: A2ATextField;
-    Residence?: A2ATextField;
-    Occupation?: A2ATextField;
-    PersonRemark?: A2ATextField;
-}
-
-export interface A2APersonName {
-    PersonNameFirstName?: A2ATextField;
-    PersonNameLastName?: A2ATextField;
-    PersonNamePatronym?: A2ATextField;
-    PersonNamePrefixLastName?: A2ATextField;
-    PersonNameLiteral?: A2ATextField;
-}
-
-export interface A2ARelation {
-    '@_pid'?: string;
-    RelationType?: A2ATextField;
-    PersonKeyRef?: {
-        '@_PersonKeyRef'?: string;
-    };
-    Person?: A2APerson;
-}
-
-export interface A2AEvent {
-    EventType?: A2ATextField;
-    EventDate?: A2ADateField;
-    EventPlace?: A2ATextField;
-}
-
-export interface A2AScan {
-    Uri?: A2ATextField;
-    UriViewer?: A2ATextField;
-    OrderSequenceNumber?: A2ATextField;
-}
-
-export interface A2ATextField {
-    '#text'?: string;
-    '@_Value'?: string;
-    [key: string]: unknown;
-}
-
-export interface A2ADateField {
-    Date?: A2ATextField;
-    Year?: A2ATextField;
-    Month?: A2ATextField;
-    Day?: A2ATextField;
-}
-
-// ============================================
-// OAI-PMH TYPES
-// ============================================
-
+// OAI-PMH Types
 export interface OAIResponse {
-    'OAI-PMH': {
+    'OAI-PMH'?: {
         responseDate?: string;
-        request?: unknown;
-        ListRecords?: {
-            record?: OAIRecord | OAIRecord[];
-            resumptionToken?: OAIResumptionToken | string;
-        };
+        request?: any;
         error?: {
             '@_code'?: string;
             '#text'?: string;
         };
         Identify?: {
             repositoryName?: string;
+            baseURL?: string;
+            protocolVersion?: string;
+            adminEmail?: string;
+        };
+        ListRecords?: {
+            record?: OAIRecord | OAIRecord[];
+            resumptionToken?: OAIResumptionToken | string;
         };
         ListSets?: {
-            set?: { setSpec?: string; setName?: string } | { setSpec?: string; setName?: string }[];
+            set?: any;
         };
     };
 }
 
 export interface OAIRecord {
-    header: {
-        identifier: string;
+    header?: {
+        identifier?: string;
         datestamp?: string;
-        setSpec?: string | string[];
         status?: string;
     };
-    metadata?: A2ARecord;
+    metadata?: {
+        A2A?: A2AData;
+        'a2a:A2A'?: A2AData;
+        [key: string]: any;
+    };
 }
 
 export interface OAIResumptionToken {
     '#text'?: string;
     '@_completeListSize'?: string;
     '@_cursor'?: string;
-    '@_expirationDate'?: string;
 }
 
-// ============================================
-// HARVEST TYPES
-// ============================================
-
+// Harvest Configuration
 export interface HarvestConfig {
     sourceCode: string;
     setSpec: string;
@@ -193,17 +136,4 @@ export interface HarvestResult {
     recordsHarvested: number;
     resumptionToken?: string;
     error?: string;
-}
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-export function getTextValue(field: A2ATextField | string | undefined): string | undefined {
-    if (!field) return undefined;
-    if (typeof field === 'string') return field;
-    if (field['#text']) return String(field['#text']);
-    if (field['@_Value']) return String(field['@_Value']);
-    const firstValue = Object.values(field).find(v => typeof v === 'string');
-    return firstValue as string | undefined;
 }

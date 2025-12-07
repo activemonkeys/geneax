@@ -1,13 +1,19 @@
-// Bestand: src/harvester/harvest.ts
+// Bestand: src/harvester/harvest.ts (GEFIXTE VERSIE)
 
 import fs from 'fs';
 import path from 'path';
 import { parseArgs } from 'util';
 import axios from 'axios';
+import https from 'https'; // ⭐ NIEUW
 import { prisma } from '@/lib/prisma';
 import { config } from '@/lib/config';
 import logger from '@/lib/logger';
 import type { HarvestConfig, HarvestResult } from '@/types/index';
+
+// ⭐ FIX: HTTPS agent die self-signed certificates accepteert
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false
+});
 
 function parseArguments(): HarvestConfig {
     const { values } = parseArgs({
@@ -81,10 +87,18 @@ async function harvest(cfg: HarvestConfig): Promise<HarvestResult> {
                 url.searchParams.set('resumptionToken', currentToken);
             } else {
                 url.searchParams.set('metadataPrefix', 'oai_a2a');
-                url.searchParams.set('set', cfg.setSpec);
+                // ⭐ FIX: Only add 'set' parameter if the source is NOT Open Archieven
+                if (cfg.sourceCode !== 'OPENARCH') {
+                    url.searchParams.set('set', cfg.setSpec);
+                }
+                // For Open Archieven, we can optionally filter by archive code
+                // For now, we harvest everything
             }
 
+            logger.info('Requesting batch', { url: url.toString() });
+
             const response = await axios.get(url.toString(), {
+                httpsAgent,
                 timeout: config.harvest.timeout,
                 responseType: 'text',
                 headers: { 'User-Agent': 'Geneax/0.1.0' },
@@ -145,6 +159,8 @@ async function harvest(cfg: HarvestConfig): Promise<HarvestResult> {
         return { success: false, filesCreated: totalFiles, recordsHarvested: totalRecords, error: msg };
     }
 }
+
+
 
 harvest(parseArguments())
     .then(res => {

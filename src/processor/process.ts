@@ -1,4 +1,4 @@
-// Bestand: src/processor/process.ts
+// src/processor/process.ts
 
 import fs from 'fs';
 import path from 'path';
@@ -18,54 +18,75 @@ const parser = new XMLParser({
 });
 
 interface ProcessConfig {
-    sourceCode?: string;
-    setSpec?: string;
+    dryRun: boolean;
     file?: string;
-    dryRun?: boolean;
 }
 
 function parseArguments(): ProcessConfig {
     const { values } = parseArgs({
         options: {
-            source: { type: 'string', short: 's' },
-            set: { type: 'string' },
-            file: { type: 'string', short: 'f' },
-            'dry-run': { type: 'boolean', short: 'd' },
+            'dry-run': { type: 'boolean' },
+            file: { type: 'string' },
         },
         allowPositionals: false,
     });
+
     return {
-        sourceCode: values.source?.toUpperCase(),
-        setSpec: values.set,
+        dryRun: values['dry-run'] || false,
         file: values.file,
-        dryRun: values['dry-run'],
     };
 }
 
 function findXmlFiles(cfg: ProcessConfig): string[] {
+    const files: string[] = [];
+
     if (cfg.file) {
-        const p = path.isAbsolute(cfg.file) ? cfg.file : path.join(process.cwd(), cfg.file);
-        return fs.existsSync(p) ? [p] : [];
+        const fullPath = path.join(config.rawDir, cfg.file);
+        if (fs.existsSync(fullPath)) {
+            files.push(fullPath);
+        }
+        return files;
     }
 
-    const files: string[] = [];
-    if (!fs.existsSync(config.rawDir)) return [];
-
-    const sources = cfg.sourceCode ? [cfg.sourceCode.toLowerCase()] : fs.readdirSync(config.rawDir);
-
-    for (const source of sources) {
-        const sDir = path.join(config.rawDir, source);
-        if (!fs.existsSync(sDir) || !fs.statSync(sDir).isDirectory()) continue;
-
-        const sets = cfg.setSpec ? [cfg.setSpec] : fs.readdirSync(sDir);
-        for (const set of sets) {
-            const setDir = path.join(sDir, set);
-            if (!fs.existsSync(setDir) || !fs.statSync(setDir).isDirectory()) continue;
-
-            files.push(...fs.readdirSync(setDir).filter(f => f.endsWith('.xml')).map(f => path.join(setDir, f)));
+    function walk(dir: string) {
+        if (!fs.existsSync(dir)) return;
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                walk(fullPath);
+            } else if (entry.isFile() && entry.name.endsWith('.xml')) {
+                files.push(fullPath);
+            }
         }
     }
+
+    walk(config.rawDir);
     return files.sort();
+}
+
+// ⭐ NIEUWE HELPER FUNCTIE: Converteer string naar Date
+function parseEventDate(dateString: string | undefined): Date | undefined {
+    if (!dateString) return undefined;
+
+    try {
+        // Als het al een volledige ISO timestamp is
+        if (dateString.includes('T')) {
+            return new Date(dateString);
+        }
+
+        // Als het alleen een datum is (YYYY-MM-DD), voeg tijd toe
+        const date = new Date(dateString + 'T00:00:00Z');
+
+        // Check of de datum geldig is
+        if (isNaN(date.getTime())) {
+            return undefined;
+        }
+
+        return date;
+    } catch {
+        return undefined;
+    }
 }
 
 async function processFile(filePath: string, dryRun: boolean): Promise<{ processed: number, created: number, errors: number }> {
@@ -107,8 +128,8 @@ async function processFile(filePath: string, dryRun: boolean): Promise<{ process
         const batch = parsedRecs.slice(i, i + config.processor.batchSize);
         await prisma.$transaction(async (tx) => {
             for (const rec of batch) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const safeRawData = rec.rawData as any;
+                const eventDateParsed = parseEventDate(rec.eventDate); // ⭐ NIEUW
 
                 await tx.record.upsert({
                     where: { id_eventYear: { id: rec.externalId, eventYear: rec.eventYear } },
@@ -116,15 +137,15 @@ async function processFile(filePath: string, dryRun: boolean): Promise<{ process
                         id: rec.externalId,
                         sourceCode: rec.sourceCode,
                         setSpec: rec.setSpec,
-                        recordType: rec.recordType,
+                        recordType: rec.recordType as any,
                         eventYear: rec.eventYear,
-                        eventDate: rec.eventDate,
+                        eventDate: eventDateParsed, // ⭐ GEBRUIK GEPARSEERDE DATUM
                         eventPlace: rec.eventPlace,
                         rawData: safeRawData,
                     },
                     update: {
                         rawData: safeRawData,
-                        eventDate: rec.eventDate,
+                        eventDate: eventDateParsed, // ⭐ GEBRUIK GEPARSEERDE DATUM
                         eventPlace: rec.eventPlace
                     },
                 });
@@ -136,7 +157,7 @@ async function processFile(filePath: string, dryRun: boolean): Promise<{ process
                         data: rec.persons.map(p => ({
                             recordId: rec.externalId,
                             recordYear: rec.eventYear,
-                            role: p.role,
+                            role: p.role as any,
                             givenName: p.givenName,
                             surname: p.surname,
                             patronym: p.patronym,
@@ -166,17 +187,27 @@ async function main() {
         return;
     }
 
-    logger.info(`Found ${files.length} files`);
+    console.log(`Found ${files.length} XML file(s) to process.`);
+    if (cfg.dryRun) console.log('DRY RUN mode enabled.\n');
 
-    const stats = { processed: 0, created: 0, errors: 0 };
+    let totalProcessed = 0;
+    let totalCreated = 0;
+    let totalErrors = 0;
+
     for (const file of files) {
-        const res = await processFile(file, cfg.dryRun || false);
-        stats.processed += res.processed;
-        stats.created += res.created;
-        stats.errors += res.errors;
+        console.log(`Processing: ${path.basename(file)}`);
+        const result = await processFile(file, cfg.dryRun);
+        totalProcessed += result.processed;
+        totalCreated += result.created;
+        totalErrors += result.errors;
     }
 
-    console.log(`\nSummary: ${stats.processed} records processed, ${stats.created} saved, ${stats.errors} errors.`);
+    console.log(`\nSummary: ${totalProcessed} records processed, ${totalCreated} saved, ${totalErrors} errors.`);
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+    .catch((err) => {
+        console.error('Processing failed:', err);
+        process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());

@@ -17,26 +17,26 @@ datasource db {
 // SOURCE - Metadata over archiefbronnen
 // ============================================
 model Source {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Identificatie
-  code        String   @unique  // Korte code, bijv. "BHIC", "SAA", "GA"
-  name        String             // Volledige naam, bijv. "Brabants Historisch Informatie Centrum"
-  
+  code String @unique // Korte code, bijv. "BHIC", "SAA", "GA"
+  name String // Volledige naam, bijv. "Brabants Historisch Informatie Centrum"
+
   // OAI-PMH configuratie
-  oaiUrl      String             // Base URL voor OAI-PMH endpoint
-  
+  oaiUrl String // Base URL voor OAI-PMH endpoint
+
   // Beschikbare sets (als JSON array)
   // Bijv: ["bs_geboorte", "bs_huwelijk", "bs_overlijden", "dtb_dopen"]
   availableSets String[]
-  
+
   // Status
-  isActive    Boolean  @default(true)
-  
+  isActive Boolean @default(true)
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relaties
   harvestLogs HarvestLog[]
 }
@@ -46,33 +46,32 @@ model Source {
 // ============================================
 model Record {
   // De externe identifier van het archief (GUID)
-  id          String
-  
+  id String
+
   // Bron informatie
-  sourceCode  String      // Verwijst naar Source.code
-  setSpec     String      // Bijv. "bs_geboorte"
-  
+  sourceCode String // Verwijst naar Source.code
+  setSpec    String // Bijv. "bs_geboorte"
+
   // Type akte
-  recordType  RecordType
-  
+  recordType RecordType
+
   // Gebeurtenis informatie
-  eventYear   Int         // PARTITIE KEY - Verplicht!
-  eventDate   DateTime?   // Exacte datum indien bekend
-  eventPlace  String?     // Plaats van de gebeurtenis
-  
+  eventYear  Int // PARTITIE KEY - Verplicht!
+  eventDate  DateTime? // Exacte datum indien bekend
+  eventPlace String? // Plaats van de gebeurtenis
+
   // De volledige A2A data als JSON
   // Dit is je "backup" - alle originele data blijft bewaard
-  rawData     Json
-  
+  rawData Json
+
   // Timestamps
-  createdAt   DateTime    @default(now())
-  
+  createdAt DateTime @default(now())
+
   // Relaties
-  persons     Person[]
-  
+  persons Person[]
+
   // Composite primary key (nodig voor partitionering)
   @@id([id, eventYear])
-  
   // Indexen
   @@index([sourceCode])
   @@index([setSpec])
@@ -84,66 +83,66 @@ model Record {
 // PERSON - Geëxtraheerde personen uit aktes
 // ============================================
 model Person {
-  id          String      @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relatie naar Record (inclusief eventYear voor partitioning)
-  recordId    String
-  recordYear  Int
-  record      Record      @relation(fields: [recordId, recordYear], references: [id, eventYear], onDelete: Cascade)
-  
+  recordId   String
+  recordYear Int
+  record     Record @relation(fields: [recordId, recordYear], references: [id, eventYear], onDelete: Cascade)
+
   // Rol in de akte
-  role        PersonRole
-  
+  role PersonRole
+
   // Naam componenten (genormaliseerd voor zoeken)
-  givenName   String?     // Voornaam(en)
-  surname     String?     // Achternaam
-  patronym    String?     // Patroniem (Jansz, Pietersen) - Cruciaal voor DTB!
-  prefix      String?     // Tussenvoegsel (van, de, van der)
-  
+  givenName String? // Voornaam(en)
+  surname   String? // Achternaam
+  patronym  String? // Patroniem (Jansz, Pietersen) - Cruciaal voor DTB!
+  prefix    String? // Tussenvoegsel (van, de, van der)
+
   // Extra informatie
-  age         Int?        // Leeftijd op moment van akte
-  birthYear   Int?        // Berekend geboortejaar (eventYear - age)
-  occupation  String?     // Beroep
-  residence   String?     // Woonplaats
-  
+  age        Int? // Leeftijd op moment van akte
+  birthYear  Int? // Berekend geboortejaar (eventYear - age)
+  occupation String? // Beroep
+  residence  String? // Woonplaats
+
   // Timestamps
-  createdAt   DateTime    @default(now())
-  
+  createdAt DateTime @default(now())
+
   // Indexen voor zoeken
-  @@index([recordId, recordYear])  // Voor de join
-  @@index([surname])                // Zoeken op achternaam
-  @@index([givenName])              // Zoeken op voornaam
-  @@index([patronym])               // Zoeken op patroniem
-  @@index([surname, givenName])     // Gecombineerd zoeken
-  @@index([birthYear])              // Zoeken op geboortejaar
+  @@index([recordId, recordYear]) // Voor de join
+  @@index([surname]) // Zoeken op achternaam
+  @@index([givenName]) // Zoeken op voornaam
+  @@index([patronym]) // Zoeken op patroniem
+  @@index([surname, givenName]) // Gecombineerd zoeken
+  @@index([birthYear]) // Zoeken op geboortejaar
 }
 
 // ============================================
 // HARVEST LOG - Administratie van harvesting
 // ============================================
 model HarvestLog {
-  id              Int           @id @default(autoincrement())
-  
+  id Int @id @default(autoincrement())
+
   // Welke bron en set
-  sourceId        String
-  source          Source        @relation(fields: [sourceId], references: [id])
-  setSpec         String
-  
+  sourceId String
+  source   Source @relation(fields: [sourceId], references: [id])
+  setSpec  String
+
   // Status
-  status          HarvestStatus @default(PENDING)
-  
+  status HarvestStatus @default(PENDING)
+
   // Voortgang
-  resumptionToken String?       // Voor hervatten na onderbreking
-  recordsHarvested Int          @default(0)
-  filesCreated    Int           @default(0)
-  
+  resumptionToken  String? // Voor hervatten na onderbreking
+  recordsHarvested Int     @default(0)
+  filesCreated     Int     @default(0)
+
   // Timing
-  startedAt       DateTime      @default(now())
-  completedAt     DateTime?
-  
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
   // Error logging
-  lastError       String?
-  
+  lastError String?
+
   // Unieke combinatie van bron + set
   @@unique([sourceId, setSpec])
   @@index([status])
@@ -155,53 +154,54 @@ model HarvestLog {
 
 enum RecordType {
   // Burgerlijke Stand (1811+)
-  BS_BIRTH        // Geboorteakte
-  BS_MARRIAGE     // Huwelijksakte
-  BS_DEATH        // Overlijdensakte
-  BS_DIVORCE      // Echtscheidingsakte
-  
+  BS_BIRTH // Geboorteakte
+  BS_MARRIAGE // Huwelijksakte
+  BS_DEATH // Overlijdensakte
+  BS_DIVORCE // Echtscheidingsakte
+
   // DTB - Doop, Trouw, Begraaf (voor 1811)
-  DTB_BAPTISM     // Doopakte
-  DTB_MARRIAGE    // Trouwakte (kerkelijk of schepenbank)
-  DTB_BURIAL      // Begraafakte
-  
+  DTB_BAPTISM // Doopakte
+  DTB_MARRIAGE // Trouwakte (kerkelijk of schepenbank)
+  DTB_BURIAL // Begraafakte
+  POPULATION_REGISTER
   // Overig
   OTHER
 }
 
 enum PersonRole {
   // Geboorte
-  CHILD           // Het kind
-  FATHER          // Vader
-  MOTHER          // Moeder
-  DECLARANT       // Aangever (vaak de vader)
-  
+  CHILD // Het kind
+  FATHER // Vader
+  MOTHER // Moeder
+  DECLARANT // Aangever (vaak de vader)
+  REGISTRANT
+
   // Huwelijk
-  GROOM           // Bruidegom
-  BRIDE           // Bruid
-  GROOM_FATHER    // Vader van de bruidegom
-  GROOM_MOTHER    // Moeder van de bruidegom
-  BRIDE_FATHER    // Vader van de bruid
-  BRIDE_MOTHER    // Moeder van de bruid
-  
+  GROOM // Bruidegom
+  BRIDE // Bruid
+  GROOM_FATHER // Vader van de bruidegom
+  GROOM_MOTHER // Moeder van de bruidegom
+  BRIDE_FATHER // Vader van de bruid
+  BRIDE_MOTHER // Moeder van de bruid
+
   // Overlijden
-  DECEASED        // De overledene
-  PARTNER         // Partner van de overledene
-  
+  DECEASED // De overledene
+  PARTNER // Partner van de overledene
+
   // DTB specifiek
-  BAPTIZED        // De dopeling
-  GODFATHER       // Peetvader / Doopgetuige
-  GODMOTHER       // Peetmoeder / Doopgetuige
-  
+  BAPTIZED // De dopeling
+  GODFATHER // Peetvader / Doopgetuige
+  GODMOTHER // Peetmoeder / Doopgetuige
+
   // Algemeen
-  WITNESS         // Getuige
-  OTHER           // Overige
+  WITNESS // Getuige
+  OTHER // Overige
 }
 
 enum HarvestStatus {
-  PENDING         // Nog niet gestart
-  IN_PROGRESS     // Bezig met harvesten
-  COMPLETED       // Succesvol afgerond
-  FAILED          // Gefaald (zie lastError)
-  PAUSED          // Gepauzeerd (heeft resumptionToken)
+  PENDING // Nog niet gestart
+  IN_PROGRESS // Bezig met harvesten
+  COMPLETED // Succesvol afgerond
+  FAILED // Gefaald (zie lastError)
+  PAUSED // Gepauzeerd (heeft resumptionToken)
 }

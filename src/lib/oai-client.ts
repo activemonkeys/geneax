@@ -1,10 +1,16 @@
-// Bestand: src/lib/oai-client.ts
+// Bestand: src/lib/oai-client.ts (GEFIXTE VERSIE)
 
 import axios, { AxiosError } from 'axios';
+import https from 'https';
 import { XMLParser } from 'fast-xml-parser';
 import type { OAIResponse, OAIRecord, OAIResumptionToken } from '@/types/index';
 import { config } from './config';
 import logger from './logger';
+
+// ⭐ FIX: Maak een HTTPS agent die self-signed certificates accepteert
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false
+});
 
 const parser = new XMLParser({
     ignoreAttributes: false,
@@ -14,6 +20,16 @@ const parser = new XMLParser({
         return ['record', 'setSpec', 'set'].includes(name);
     },
 });
+
+// ⭐ FIX: Standaard axios configuratie met de HTTPS agent
+const axiosConfig = {
+    httpsAgent,
+    timeout: config.harvest.timeout,
+    headers: {
+        'Accept': 'application/xml, text/xml',
+        'User-Agent': 'Geneax/0.1.0',
+    },
+};
 
 export interface ListRecordsOptions {
     baseUrl: string;
@@ -50,12 +66,9 @@ export async function listRecords(options: ListRecordsOptions): Promise<ListReco
     logger.debug(`OAI-PMH request: ${url.toString()}`);
 
     try {
+        // ⭐ FIX: Gebruik de nieuwe config met HTTPS agent
         const response = await axios.get(url.toString(), {
-            timeout: config.harvest.timeout,
-            headers: {
-                'Accept': 'application/xml, text/xml',
-                'User-Agent': 'Geneax/0.1.0',
-            },
+            ...axiosConfig,
             responseType: 'text',
         });
 
@@ -108,8 +121,9 @@ export async function listSets(baseUrl: string): Promise<string[]> {
     url.searchParams.set('verb', 'ListSets');
 
     try {
+        // ⭐ FIX: Gebruik de nieuwe config
         const response = await axios.get(url.toString(), {
-            timeout: config.harvest.timeout,
+            ...axiosConfig,
             responseType: 'text',
         });
 
@@ -132,8 +146,9 @@ export async function identify(baseUrl: string): Promise<{ valid: boolean; repos
     url.searchParams.set('verb', 'Identify');
 
     try {
+        // ⭐ FIX: Gebruik de nieuwe config
         const response = await axios.get(url.toString(), {
-            timeout: config.harvest.timeout,
+            ...axiosConfig,
             responseType: 'text',
         });
 

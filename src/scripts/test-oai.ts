@@ -1,57 +1,80 @@
-// Bestand: src/scripts/test-oai.ts
+// src/scripts/test-oai.ts
 
-import axios from 'axios';
-import { XMLParser } from 'fast-xml-parser';
+/**
+ * Kleine testscript om te controleren of de OAI-PMH endpoint bereikbaar is.
+ * Voert een simpele `Identify`-call uit op elk archief in de ARCHIVES array.
+ */
 
-const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: '@_',
-    textNodeName: '#text',
-});
+// Bovenaan toevoegen voor SSL fix (self-signed certificates toestaan bij testen)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-const ARCHIVES = [
-    { name: 'WBA', url: 'https://api.memorix.io/oai-pmh/v1/79c56a5e-6c89-11e3-92e7-3cd92befe4f8' },
-    { name: 'BHIC', url: 'https://api.bhic.nl/oai-pmh' },
+type Archive = {
+    name: string;
+    url: string;
+};
+
+// Gebruik alleen de Open Archieven endpoint
+const ARCHIVES: Archive[] = [
+    { name: 'Open Archieven', url: 'https://api.openarch.nl/oai-pmh/' },
 ];
 
-async function testArchive(name: string, url: string) {
-    console.log(`\nTesting: ${name} (${url})`);
+/**
+ * Bouw een OAI-PMH URL met de opgegeven parameters.
+ */
+function buildOaiUrl(baseUrl: string, params: Record<string, string>): string {
+    const url = new URL(baseUrl);
+    Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+    });
+    return url.toString();
+}
+
+/**
+ * Voer een eenvoudige OAI-PMH Identify call uit.
+ */
+async function testIdentify(archive: Archive): Promise<void> {
+    const url = buildOaiUrl(archive.url, { verb: 'Identify' });
+
+    console.log(`\n=== Test OAI-PMH: ${archive.name} ===`);
+    console.log(`URL: ${url}`);
+
     try {
-        // Identify
-        const idRes = await axios.get(`${url}?verb=Identify`, { timeout: 10000 });
-        const idData = parser.parse(idRes.data);
-        console.log(`✅ Identify: ${idData['OAI-PMH']?.Identify?.repositoryName || 'OK'}`);
+        const response = await fetch(url);
 
-        // ListSets
-        const setRes = await axios.get(`${url}?verb=ListSets`, { timeout: 10000 });
-        const setList = parser.parse(setRes.data)['OAI-PMH']?.ListSets?.set;
-        const count = Array.isArray(setList) ? setList.length : (setList ? 1 : 0);
-        console.log(`✅ ListSets: Found ${count} sets`);
+        console.log(`Status: ${response.status} ${response.statusText}`);
 
-        // ListRecords (Sample)
-        const recRes = await axios.get(`${url}?verb=ListRecords&metadataPrefix=oai_a2a`, { timeout: 30000 });
-        const recData = parser.parse(recRes.data);
-        const error = recData['OAI-PMH']?.error;
-
-        if (error) {
-            console.log(`⚠️  OAI Error: ${error['@_code']}`);
-        } else {
-            const recs = recData['OAI-PMH']?.ListRecords?.record;
-            const recCount = Array.isArray(recs) ? recs.length : (recs ? 1 : 0);
-            console.log(`✅ ListRecords: Received ${recCount} records`);
+        if (!response.ok) {
+            console.error(`❌ Fout bij ophalen van Identify voor ${archive.name}`);
+            return;
         }
-        return true;
+
+        const text = await response.text();
+
+        // Log alleen de eerste ~10 regels ter inspectie, zodat het niet te veel wordt
+        const lines = text.split('\n').slice(0, 10);
+        console.log('--- Eerste regels van response ---');
+        console.log(lines.join('\n'));
+        console.log('--- Einde voorbeeldresponse ---');
+
+        console.log(`✅ Identify call gelukt voor ${archive.name}`);
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.log(`❌ Error: ${message}`);
-        return false;
+        console.error(`❌ Exception bij ophalen van Identify voor ${archive.name}:`);
+        console.error(error);
     }
 }
 
+/**
+ * Main entrypoint
+ */
 async function main() {
+    console.log('Start OAI-PMH tests...\n');
+
     for (const archive of ARCHIVES) {
-        await testArchive(archive.name, archive.url);
+        await testIdentify(archive);
     }
+
+    console.log('\nKlaar met OAI-PMH tests.');
 }
 
-main().catch(console.error);
+// Alleen uitvoeren als dit script direct wordt aangeroepen (niet geïmporteerd)
+void main();

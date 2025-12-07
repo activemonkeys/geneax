@@ -1,21 +1,30 @@
 // Bestand: src/lib/prisma.ts
 
-import { PrismaClient } from '@/generated/prisma/client';
+// 1. Laad de variabelen uit .env in process.env
+import 'dotenv/config';
+
+// 2. Importeer je gevalideerde env object
+import { env } from '@/env';
+
+import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@/generated/prisma/client';
 
 const prismaClientSingleton = () => {
-  // We gebruiken een lege string als fallback om TypeScript tevreden te houden tijdens build
-  // Als de app echt start zonder DATABASE_URL, zal hij crashen bij connectie (wat goed is)
-  const connectionString = process.env.DATABASE_URL || '';
+  // 3. Gebruik nu env.DATABASE_URL in plaats van process.env.DATABASE_URL
+  // Dit garandeert dat de URL bestaat en geldig is dankzij Zod
+  const connectionString = env.DATABASE_URL;
 
-  const adapter = new PrismaPg({
+  const pool = new Pool({
     connectionString,
   });
+
+  const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
     adapter,
     log:
-      process.env.NODE_ENV === 'development' || process.env.LOG_LEVEL === 'debug'
+      env.NODE_ENV === 'development' // Je kunt hier ook env.NODE_ENV gebruiken
         ? ['query', 'error', 'warn']
         : ['error'],
   });
@@ -25,10 +34,7 @@ declare global {
   var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
 }
 
-// De instantie wordt nu geëxporteerd als `dbCore`.
 export const dbCore = globalThis.prismaGlobal ?? prismaClientSingleton();
-
-// Export als default 'prisma' voor compatibiliteit met scripts
 export const prisma = dbCore;
 export default dbCore;
 

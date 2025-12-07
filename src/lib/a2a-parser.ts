@@ -1,250 +1,200 @@
-// Bestand: src/lib/a2a-parser.ts
+// src/lib/a2a-parser.ts
 
-import type { RecordType, PersonRole } from '@/generated/prisma/client';
-import type { A2AData, A2APerson, A2ARelation, ParsedRecord, ParsedPerson, A2ATextField } from '@/types/index';
-import { getTextValue } from '@/types/index';
-import logger from './logger';
-
-const SET_TO_RECORD_TYPE: Record<string, RecordType> = {
-    'bs_geboorte': 'BS_BIRTH',
-    'bs_huwelijk': 'BS_MARRIAGE',
-    'bs_overlijden': 'BS_DEATH',
-    'bs_echtscheiding': 'BS_DIVORCE',
-    'dtb_dopen': 'DTB_BAPTISM',
-    'dtb_trouwen': 'DTB_MARRIAGE',
-    'dtb_begraven': 'DTB_BURIAL',
-    'dtb_doop': 'DTB_BAPTISM',
-    'dtb_trouw': 'DTB_MARRIAGE',
-    'dtb_begraaf': 'DTB_BURIAL',
-    'genealogie': 'OTHER',
-    'civil': 'OTHER',
-};
-
-const RELATION_TO_ROLE: Record<string, PersonRole> = {
-    'vader': 'FATHER', 'moeder': 'MOTHER', 'kind': 'CHILD',
-    'bruidegom': 'GROOM', 'bruid': 'BRIDE',
-    'overledene': 'DECEASED', 'aangever': 'DECLARANT', 'getuige': 'WITNESS',
-    'partner': 'PARTNER', 'echtgenoot': 'PARTNER', 'echtgenote': 'PARTNER',
-    'weduwe': 'PARTNER', 'weduwnaar': 'PARTNER',
-    'vader van de bruidegom': 'GROOM_FATHER', 'moeder van de bruidegom': 'GROOM_MOTHER',
-    'vader bruidegom': 'GROOM_FATHER', 'moeder bruidegom': 'GROOM_MOTHER',
-    'vader van de bruid': 'BRIDE_FATHER', 'moeder van de bruid': 'BRIDE_MOTHER',
-    'vader bruid': 'BRIDE_FATHER', 'moeder bruid': 'BRIDE_MOTHER',
-    'dopeling': 'BAPTIZED', 'gedoopte': 'BAPTIZED',
-    'peter': 'GODFATHER', 'peetvader': 'GODFATHER',
-    'meter': 'GODMOTHER', 'peetmoeder': 'GODMOTHER',
-    'doopgetuige': 'WITNESS',
-    'father': 'FATHER', 'mother': 'MOTHER', 'child': 'CHILD',
-    'groom': 'GROOM', 'bride': 'BRIDE', 'deceased': 'DECEASED', 'witness': 'WITNESS',
-};
-
-export interface ParseOptions {
-    sourceCode: string;
-    setSpec: string;
-    externalId: string;
-}
+import type { A2AData, ParsedRecord } from '@/types/index';
 
 export function parseA2ARecord(
-    a2aData: A2AData | undefined,
-    options: ParseOptions
+    a2a: any,
+    meta: { sourceCode: string; setSpec: string; externalId: string }
 ): ParsedRecord | null {
-    if (!a2aData) {
-        logger.warn('Geen A2A data gevonden', { id: options.externalId });
-        return null;
+    if (!a2a) return null;
+
+    // Handle both namespaced (a2a:) and non-namespaced fields
+    const source = a2a.Source || a2a['a2a:Source'];
+    const person = a2a.Person || a2a['a2a:Person'];
+    const relation = a2a.Relation || a2a['a2a:Relation'];
+    const event = a2a.Event || a2a['a2a:Event'];
+
+    if (!source) return null;
+
+    // Extract source type (handle namespace)
+    const sourceType = source.SourceType?.['#text'] || source['a2a:SourceType'] || 'Unknown';
+    const recordType = mapSourceType(sourceType);
+
+    // Extract date (handle multiple date formats)
+    const sourceDate = source.SourceDate || source['a2a:SourceDate'] || source.SourceIndexDate || source['a2a:SourceIndexDate'];
+    let eventDate: string | undefined;
+    let eventYear: number | undefined;
+
+    if (sourceDate) {
+        // Try Date field first
+        const dateField = sourceDate.Date || sourceDate['a2a:Date'];
+        if (dateField) {
+            eventDate = dateField['#text'] || dateField;
+        }
+        // Try From field (for index dates)
+        if (!eventDate && sourceDate.From) {
+            eventDate = sourceDate.From['#text'] || sourceDate.From || sourceDate['a2a:From'];
+        }
+        if (!eventDate && sourceDate['a2a:From']) {
+            eventDate = sourceDate['a2a:From'];
+        }
     }
 
-    const { sourceCode, setSpec, externalId } = options;
-    const recordType = determineRecordType(a2aData, setSpec);
-    const { eventYear, eventDate } = extractEventDate(a2aData);
-    const eventPlace = extractEventPlace(a2aData);
+    // Extract year
+    if (eventDate) {
+        const yearMatch = eventDate.match(/(\d{4})/);
+        if (yearMatch) eventYear = parseInt(yearMatch[1], 10);
+    }
 
-    const persons = extractPersons(a2aData, recordType);
+    // Fallback to event date if source date not found
+    if (!eventYear && event) {
+        const eventDateObj = event.EventDate || event['a2a:EventDate'];
+        if (eventDateObj) {
+            const year = eventDateObj.Year || eventDateObj['a2a:Year'];
+            if (year) eventYear = typeof year === 'number' ? year : parseInt(year, 10);
+        }
+    }
+
+    // Extract place
+    const sourcePlaceObj = source.SourcePlace || source['a2a:SourcePlace'];
+    const eventPlace = sourcePlaceObj?.Place?.['#text'] || sourcePlaceObj?.['a2a:Place'] || sourcePlaceObj?.Place || undefined;
+
+    // Extract persons
+    const persons: Array<{
+        role: string;
+        givenName?: string;
+        surname?: string;
+        patronym?: string;
+        prefix?: string;
+        age?: number;
+        occupation?: string;
+        residence?: string;
+    }> = [];
+
+    // Main person
+    if (person) {
+        const p = extractPerson(person, determineMainRole(recordType));
+        if (p) persons.push(p);
+    }
+
+    // Relations
+    if (relation) {
+        const relations = Array.isArray(relation) ? relation : [relation];
+        for (const rel of relations) {
+            const relPerson = rel.Person || rel['a2a:Person'];
+            const relType = rel.RelationType?.['#text'] || rel['a2a:RelationType'] || 'Unknown';
+            const role = mapRelationType(relType);
+
+            if (relPerson) {
+                const p = extractPerson(relPerson, role);
+                if (p) persons.push(p);
+            }
+        }
+    }
 
     return {
-        externalId,
-        sourceCode,
-        setSpec,
+        externalId: meta.externalId,
+        sourceCode: meta.sourceCode,
+        setSpec: meta.setSpec,
         recordType,
         eventYear: eventYear || 1800,
         eventDate,
         eventPlace,
-        rawData: a2aData as Record<string, unknown>,
         persons,
+        rawData: a2a,
     };
 }
 
-function determineRecordType(a2a: A2AData, setSpec: string): RecordType {
-    const normalizedSet = setSpec.toLowerCase().replace(/[^a-z_]/g, '');
-    if (SET_TO_RECORD_TYPE[normalizedSet]) {
-        return SET_TO_RECORD_TYPE[normalizedSet];
+function extractPerson(personData: any, role: string): {
+    role: string;
+    givenName?: string;
+    surname?: string;
+    patronym?: string;
+    prefix?: string;
+    age?: number;
+    occupation?: string;
+    residence?: string;
+} | null {
+    // Handle namespace
+    const personName = personData.PersonName || personData['a2a:PersonName'];
+    if (!personName) return null;
+
+    const givenName = personName.PersonNameFirstName?.['#text'] ||
+        personName.PersonNameFirstName ||
+        personName['a2a:PersonNameFirstName'];
+
+    const surname = personName.PersonNameLastName?.['#text'] ||
+        personName.PersonNameLastName ||
+        personName['a2a:PersonNameLastName'];
+
+    const patronym = personName.PersonNamePatronym?.['#text'] ||
+        personName.PersonNamePatronym ||
+        personName['a2a:PersonNamePatronym'];
+
+    const prefix = personName.PersonNamePrefixLastName?.['#text'] ||
+        personName.PersonNamePrefixLastName ||
+        personName['a2a:PersonNamePrefixLastName'];
+
+    // Extract age
+    let age: number | undefined;
+    const ageField = personData.Age || personData['a2a:Age'];
+    if (ageField) {
+        const ageValue = ageField['#text'] || ageField;
+        age = typeof ageValue === 'number' ? ageValue : parseInt(ageValue, 10);
+        if (isNaN(age)) age = undefined;
     }
 
-    const sourceType = getTextValue(a2a.Source?.SourceType)?.toLowerCase();
-    if (sourceType) {
-        if (sourceType.includes('geboorte') || sourceType.includes('birth')) return 'BS_BIRTH';
-        if (sourceType.includes('huwelijk') || sourceType.includes('marriage')) return 'BS_MARRIAGE';
-        if (sourceType.includes('overlij') || sourceType.includes('death')) return 'BS_DEATH';
-        if (sourceType.includes('doop') || sourceType.includes('baptism')) return 'DTB_BAPTISM';
-        if (sourceType.includes('trouw')) return 'DTB_MARRIAGE';
-        if (sourceType.includes('begraaf') || sourceType.includes('burial')) return 'DTB_BURIAL';
-    }
+    // Extract occupation
+    const occupation = personData.Occupation?.['#text'] ||
+        personData.Occupation ||
+        personData['a2a:Occupation'];
 
+    // Extract residence
+    const residenceObj = personData.Residence || personData['a2a:Residence'];
+    const residence = residenceObj?.Place?.['#text'] ||
+        residenceObj?.['a2a:Place'] ||
+        residenceObj?.Place;
+
+    return {
+        role,
+        givenName,
+        surname,
+        patronym,
+        prefix,
+        age,
+        occupation,
+        residence,
+    };
+}
+
+function mapSourceType(sourceType: string): string {
+    const lower = sourceType.toLowerCase();
+    if (lower.includes('geboorte') || lower.includes('birth')) return 'BS_BIRTH';
+    if (lower.includes('huwelijk') || lower.includes('marriage')) return 'BS_MARRIAGE';
+    if (lower.includes('overlijden') || lower.includes('death')) return 'BS_DEATH';
+    if (lower.includes('doop') || lower.includes('baptism')) return 'DTB_BAPTISM';
+    if (lower.includes('trouw') || lower.includes('marriage')) return 'DTB_MARRIAGE';
+    if (lower.includes('begraaf') || lower.includes('burial')) return 'DTB_BURIAL';
+    if (lower.includes('bevolking') || lower.includes('population')) return 'POPULATION_REGISTER';
     return 'OTHER';
 }
 
-function extractEventDate(a2a: A2AData): { eventYear?: number; eventDate?: Date } {
-    // SourceDate
-    if (a2a.Source?.SourceDate) {
-        const res = parseDateField(a2a.Source.SourceDate);
-        if (res.eventYear) return res;
-    }
-    // EventDate
-    if (a2a.Event?.EventDate) {
-        const res = parseDateField(a2a.Event.EventDate);
-        if (res.eventYear) return res;
-    }
-    // SourceIndexDate From
-    const fromDate = getTextValue(a2a.Source?.SourceIndexDate?.From);
-    if (fromDate) {
-        const year = extractYearFromString(fromDate);
-        if (year) return { eventYear: year };
-    }
-    return {};
+function mapRelationType(relationType: string): string {
+    const lower = relationType.toLowerCase();
+    if (lower.includes('vader') || lower.includes('father')) return 'FATHER';
+    if (lower.includes('moeder') || lower.includes('mother')) return 'MOTHER';
+    if (lower.includes('bruidegom') || lower.includes('groom')) return 'GROOM';
+    if (lower.includes('bruid') || lower.includes('bride')) return 'BRIDE';
+    if (lower.includes('getuige') || lower.includes('witness')) return 'WITNESS';
+    if (lower.includes('kind') || lower.includes('child')) return 'CHILD';
+    if (lower === 'geregistreerde') return 'REGISTRANT';
+    return 'OTHER';
 }
 
-function parseDateField(dateField: { Date?: A2ATextField; Year?: A2ATextField; Month?: A2ATextField; Day?: A2ATextField }) {
-    const dateStr = getTextValue(dateField.Date);
-    if (dateStr) {
-        const parsed = parseDate(dateStr);
-        if (parsed) return { eventYear: parsed.getFullYear(), eventDate: parsed };
-        const year = extractYearFromString(dateStr);
-        if (year) return { eventYear: year };
-    }
-    const yearStr = getTextValue(dateField.Year);
-    if (yearStr) {
-        const year = parseInt(yearStr, 10);
-        if (!isNaN(year) && year >= 1500 && year <= 2100) {
-            const month = parseInt(getTextValue(dateField.Month) || '0', 10);
-            const day = parseInt(getTextValue(dateField.Day) || '1', 10);
-            if (month > 0 && day > 0) {
-                return { eventYear: year, eventDate: new Date(year, month - 1, day) };
-            }
-            return { eventYear: year };
-        }
-    }
-    return {};
+function determineMainRole(recordType: string): string {
+    if (recordType === 'BS_BIRTH' || recordType === 'DTB_BAPTISM') return 'CHILD';
+    if (recordType === 'BS_DEATH' || recordType === 'DTB_BURIAL') return 'DECEASED';
+    if (recordType === 'BS_MARRIAGE' || recordType === 'DTB_MARRIAGE') return 'GROOM';
+    if (recordType === 'POPULATION_REGISTER') return 'REGISTRANT';
+    return 'OTHER';
 }
-
-function parseDate(dateStr: string): Date | undefined {
-    const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (isoMatch) return new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]));
-
-    const nlMatch = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
-    if (nlMatch) return new Date(parseInt(nlMatch[3]), parseInt(nlMatch[2]) - 1, parseInt(nlMatch[1]));
-
-    const yearOnly = extractYearFromString(dateStr);
-    if (yearOnly) return new Date(yearOnly, 0, 1);
-    return undefined;
-}
-
-function extractYearFromString(str: string): number | undefined {
-    const match = str.match(/\b(1[5-9]\d{2}|20[0-2]\d)\b/);
-    return match ? parseInt(match[1], 10) : undefined;
-}
-
-function extractEventPlace(a2a: A2AData): string | undefined {
-    return getTextValue(a2a.Source?.SourcePlace?.Place) ||
-        getTextValue(a2a.Event?.EventPlace) ||
-        getTextValue(a2a.Source?.SourceReference?.Place);
-}
-
-function extractPersons(a2a: A2AData, recordType: RecordType): ParsedPerson[] {
-    const persons: ParsedPerson[] = [];
-
-    const mainPersons = normalizeArray(a2a.Person);
-    for (const p of mainPersons) {
-        const parsed = parseA2APerson(p);
-        if (parsed) {
-            parsed.role = determineMainPersonRole(recordType);
-            persons.push(parsed);
-        }
-    }
-
-    const relations = normalizeArray(a2a.Relation);
-    for (const r of relations) {
-        const parsed = parseA2ARelation(r);
-        if (parsed) persons.push(parsed);
-    }
-
-    return persons;
-}
-
-function parseA2APerson(person: A2APerson | undefined): ParsedPerson | null {
-    if (!person || !person.PersonName) return null;
-
-    const name = person.PersonName;
-    const givenName = cleanName(getTextValue(name.PersonNameFirstName));
-    const surname = cleanName(getTextValue(name.PersonNameLastName));
-    const patronym = cleanName(getTextValue(name.PersonNamePatronym));
-    const prefix = cleanName(getTextValue(name.PersonNamePrefixLastName));
-
-    if (!givenName && !surname && !patronym) {
-        const literal = getTextValue(name.PersonNameLiteral);
-        if (literal) {
-            const parts = literal.trim().split(/\s+/);
-            return parts.length >= 2
-                ? { role: 'OTHER', givenName: parts[0], surname: parts.slice(1).join(' ') }
-                : { role: 'OTHER', givenName: literal };
-        }
-        return null;
-    }
-
-    const ageStr = getTextValue(person.Age);
-    const age = ageStr ? parseInt(ageStr, 10) : undefined;
-
-    return {
-        role: 'OTHER',
-        givenName: givenName || undefined,
-        surname: surname || undefined,
-        patronym: patronym || undefined,
-        prefix: prefix || undefined,
-        age: age && !isNaN(age) ? age : undefined,
-        occupation: getTextValue(person.Occupation) || undefined,
-        residence: getTextValue(person.Residence) || undefined,
-    };
-}
-
-function parseA2ARelation(relation: A2ARelation): ParsedPerson | null {
-    if (!relation.Person) return null;
-    const parsed = parseA2APerson(relation.Person);
-    if (!parsed) return null;
-
-    const type = getTextValue(relation.RelationType)?.toLowerCase().trim();
-    if (type) parsed.role = RELATION_TO_ROLE[type] || 'OTHER';
-    return parsed;
-}
-
-function determineMainPersonRole(type: RecordType): PersonRole {
-    switch (type) {
-        case 'BS_BIRTH': return 'CHILD';
-        case 'BS_DEATH': return 'DECEASED';
-        case 'DTB_BAPTISM': return 'BAPTIZED';
-        case 'DTB_BURIAL': return 'DECEASED';
-        case 'BS_MARRIAGE':
-        case 'DTB_MARRIAGE': return 'GROOM';
-        default: return 'OTHER';
-    }
-}
-
-function normalizeArray<T>(value: T | T[] | undefined): T[] {
-    if (!value) return [];
-    return Array.isArray(value) ? value : [value];
-}
-
-function cleanName(name: string | undefined): string | undefined {
-    if (!name) return undefined;
-    const cleaned = name.replace(/\s+/g, ' ').trim();
-    return (cleaned === '-' || cleaned === '?' || cleaned === 'N.N.') ? undefined : cleaned;
-}
-
-export default parseA2ARecord;
