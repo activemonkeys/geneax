@@ -11,7 +11,6 @@
         "db:migrate": "pnpm with-env prisma migrate dev",
         "db:reset": "pnpm with-env prisma migrate reset",
         "db:studio": "pnpm prisma studio",
-        "db:migrate-flexible": "psql -d geneax -f prisma/migrations/flexible_schema.sql && pnpm db:generate",
         "dev": "next dev",
         "devs": "next dev --experimental-https",
         "format:check": "prettier --check \"**/*.{js,jsx,cjs,mjs,ts,tsx,json,yml,yaml}\" --cache",
@@ -22,17 +21,13 @@
         "preview": "next build && next start",
         "start": "next start",
         "typecheck": "tsc --noEmit",
-        "harvest": "tsx src/harvester/harvest.ts",
-        "process": "tsx src/processor/process.ts",
-        "add-source": "tsx src/scripts/add-source.ts",
-        "migrate-data": "tsx src/scripts/migrate-existing-data.ts",
         "stats": "tsx src/scripts/stats.ts",
-        "count": "tsx src/scripts/count-persons.ts",
         "clean-db": "tsx src/scripts/clean-db.ts",
         "reset-db": "tsx src/scripts/reset-db.ts",
-        "test:oai": "tsx src/scripts/test-oai.ts",
-        "test:parser": "tsx src/scripts/test-parser.ts",
-        "test:db": "tsx src/scripts/test-db.ts"
+        "test:db": "tsx src/scripts/test-db.ts",
+        "registry:populate": "tsx src/scripts/populate-registry.ts",
+        "registry:scan-all": "tsx src/scripts/scan-all.ts",
+        "registry:test-endpoint": "tsx src/scripts/test-endpoint.ts"
     },
     "dependencies": {
         "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
@@ -40,11 +35,12 @@
         "@prisma/client": "^7.1.0",
         "@prisma/client-runtime-utils": "7.1.0",
         "@t3-oss/env-nextjs": "^0.13.8",
-        "axios": "^1.7.9",
+        "@types/xml2js": "0.4.14",
+        "axios": "^1.13.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "dotenv": "^17.2.3",
-        "fast-xml-parser": "^4.5.1",
+        "fast-xml-parser": "^5.3.2",
         "geist": "^1.5.1",
         "lucide-react": "^0.556.0",
         "next": "16.0.7",
@@ -54,6 +50,7 @@
         "react-dom": "19.2.1",
         "tailwind-merge": "^3.4.0",
         "tailwindcss-animate": "^1.0.7",
+        "xml2js": "^0.6.2",
         "zod": "^4.1.13"
     },
     "devDependencies": {
@@ -70,7 +67,7 @@
         "prettier-plugin-tailwindcss": "^0.7.2",
         "prisma": "^7.1.0",
         "tailwindcss": "^4",
-        "tsx": "^4.19.2",
+        "tsx": "^4.21.0",
         "typescript": "^5"
     }
 }

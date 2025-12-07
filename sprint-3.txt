@@ -1,0 +1,176 @@
+# Geneax - Genealogische Database
+
+Centrale database van Nederlandse genealogische data met uniforme toegang tot alle archieven.
+
+## Sprint 2: Archive Discovery & Registry System
+
+### Nieuwe Features
+
+- **Archive Registry**: Database systeem voor alle Nederlandse archieven
+- **OAI-PMH Discovery**: Automatisch archieven scannen en configureren
+- **Multi-level Status Tracking**: Archive → Dataset → Harvest Session
+- **Parser Registry**: Pluggable parser systeem voor verschillende XML varianten
+
+### Database Schema
+```
+ArchiveRegistry (archieven)
+  ├── code (PK)
+  ├── name
+  ├── oaiUrl
+  ├── parserType
+  ├── parserConfig (JSONB)
+  ├── metadata (JSONB)
+  └── datasets[]
+
+ArchiveDataset (sets binnen archief)
+  ├── id (PK)
+  ├── archiveCode (FK)
+  ├── setSpec
+  ├── status
+  └── harvestSessions[]
+
+HarvestSession (harvest runs)
+  ├── id (PK)
+  ├── datasetId (FK)
+  ├── status
+  ├── recordsProcessed
+  ├── errors (JSONB)
+  └── stats (JSONB)
+```
+
+### Setup
+
+1. **Database migratie**
+```bash
+pnpm db:migrate
+pnpm db:generate
+```
+
+2. **Registry vullen**
+```bash
+pnpm registry:populate
+```
+
+3. **Archieven scannen**
+```bash
+# Scan alle archieven uit registry.json
+pnpm registry:scan-all
+
+# Of test één endpoint
+pnpm registry:test-endpoint https://www.openarch.nl/api/oai/ NL_OPEN_ARCHIEVEN
+```
+
+### Scripts
+
+**Registry Management:**
+- `pnpm registry:populate` - Laad archieven uit sources/registry.json naar database
+- `pnpm registry:scan-all` - Scan alle archieven en genereer configs
+- `pnpm registry:test-endpoint <URL> <CODE>` - Test één OAI-PMH endpoint
+
+**Bestaande Scripts:**
+- `pnpm harvest` - Harvest records
+- `pnpm process` - Process XML naar database
+- `pnpm stats` - Database statistieken
+
+### Project Structuur
+```
+sources/
+├── registry.json                    # Master lijst archieven
+└── {archive-code}/
+    ├── config.json                  # Gegenereerde configuratie
+    ├── identify.json                # OAI-PMH Identify response
+    ├── sets.json                    # Beschikbare sets
+    ├── sample-records.json          # Sample records
+    └── analysis-report.md           # XML structuur analyse
+
+src/
+├── discovery/
+│   ├── oai-client.ts               # OAI-PMH client
+│   ├── scan-endpoint.ts            # Endpoint scanner
+│   ├── analyze-structure.ts        # XML analyse
+│   └── generate-config.ts          # Config generator
+├── lib/
+│   ├── archive-registry.ts         # CRUD voor archieven
+│   ├── harvest-session.ts          # Harvest tracking
+│   └── parsers/
+│       ├── registry.ts             # Parser registry
+│       └── base-parser.ts          # Base parser class
+├── scripts/
+│   ├── populate-registry.ts        # Import registry.json
+│   ├── scan-all.ts                 # Scan alle archieven
+│   └── test-endpoint.ts            # Test één endpoint
+└── types/
+    ├── registry.ts                 # Archive types
+    ├── harvest.ts                  # Harvest types
+    └── parser.ts                   # Parser types
+```
+
+### Discovery Workflow
+
+1. **Voeg archief toe aan `sources/registry.json`**
+2. **Run `pnpm registry:populate`** - Import naar database
+3. **Run `pnpm registry:scan-all`** - Scan en analyseer
+4. **Bekijk gegenereerde files** in `sources/{archive-code}/`
+5. **Parser config wordt automatisch ingesteld** op basis van XML analyse
+
+### Parser Types
+
+- `a2a_base` - Standaard A2A parser
+- `a2a_relationep` - A2A met RelationEP support
+- `a2a_v2.1` - A2A versie 2.1 specifiek
+
+Nieuwe parsers toevoegen:
+1. Maak parser in `src/lib/parsers/`
+2. Registreer in `src/lib/parsers/registry.ts`
+3. Type toevoegen aan `ParserType` in `src/types/parser.ts`
+
+### Development
+```bash
+# Database
+pnpm db:studio           # Open Prisma Studio
+pnpm db:migrate          # Nieuwe migratie
+
+# Development
+pnpm dev                 # Start Next.js dev server
+pnpm typecheck          # Type checking
+
+# Testing
+pnpm test:oai           # Test OAI-PMH connectie
+pnpm test:parser        # Test parser
+```
+
+### Volgende Stappen (Sprint 3)
+
+- [ ] Web UI voor Registry Dashboard
+- [ ] Web UI voor Discovery Tool
+- [ ] Multi-source harvester
+- [ ] Archive-specific parsers
+- [ ] Deduplicatie logica
+
+### Tech Stack
+
+- Next.js 16 + React 19
+- PostgreSQL 17 + Prisma 7
+- TypeScript
+- TailwindCSS 4
+- xml2js voor XML parsing
+
+Volgende stappen:
+
+Installeer xml2js:
+
+bashnpm install xml2js
+npm install --save-dev @types/xml2js
+
+Run database migratie:
+
+bashpnpm db:migrate
+pnpm db:generate
+
+Vul registry:
+
+bashpnpm registry:populate
+
+Test een endpoint:
+
+bashpnpm registry:test-endpoint https://www.openarch.nl/api/oai/ NL_OPEN_ARCHIEVEN

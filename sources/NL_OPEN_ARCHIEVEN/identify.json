@@ -1,0 +1,11 @@
+{
+  "repositoryName": "Open Archives",
+  "baseURL": "\nhttp://api.openarchieven.nl/oai-pmh/",
+  "protocolVersion": "2.0",
+  "adminEmail": [
+    "data@openarch.nl"
+  ],
+  "earliestDatestamp": "2013-07-18T09:31:08Z",
+  "deletedRecord": "transient",
+  "granularity": "YYYY-MM-DDThh:mm:ssZ"
+}

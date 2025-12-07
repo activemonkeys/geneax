@@ -1,0 +1,346 @@
+[
+  {
+    "setSpec": "aal",
+    "setName": "Stadsarchief Aalst"
+  },
+  {
+    "setSpec": "abs",
+    "setName": "Amsab-Instituut voor Sociale Geschiedenis"
+  },
+  {
+    "setSpec": "ade",
+    "setName": "Archief Delft"
+  },
+  {
+    "setSpec": "arg",
+    "setName": "Gemeentearchief Alphen aan den Rijn"
+  },
+  {
+    "setSpec": "bhi",
+    "setName": "Brabants Historisch Informatie Centrum"
+  },
+  {
+    "setSpec": "bor",
+    "setName": "Gemeentearchief Borsele"
+  },
+  {
+    "setSpec": "brd",
+    "setName": "Stadsarchief Breda"
+  },
+  {
+    "setSpec": "brn",
+    "setName": "Gemeentearchief Borne"
+  },
+  {
+    "setSpec": "dar",
+    "setName": "Drents Archief"
+  },
+  {
+    "setSpec": "def",
+    "setName": "Ministerie van Defensie (SIB)"
+  },
+  {
+    "setSpec": "den",
+    "setName": "Erfgoedcel Denderland"
+  },
+  {
+    "setSpec": "dev",
+    "setName": "Stadsarchief Deventer"
+  },
+  {
+    "setSpec": "dom",
+    "setName": "Archief De Domijnen Sittard-Geleen"
+  },
+  {
+    "setSpec": "eal",
+    "setName": "Erfgoedcentrum Achterhoek en Liemers"
+  },
+  {
+    "setSpec": "eem",
+    "setName": "Archief Eemland"
+  },
+  {
+    "setSpec": "ehb",
+    "setName": "Erfgoed 's-Hertogenbosch"
+  },
+  {
+    "setSpec": "ell",
+    "setName": "Erfgoed Lommel"
+  },
+  {
+    "setSpec": "elo",
+    "setName": "Erfgoed Leiden en omstreken"
+  },
+  {
+    "setSpec": "ens",
+    "setName": "Stadsarchief Enschede"
+  },
+  {
+    "setSpec": "epe",
+    "setName": "Streekarchief Epe, Hattem en Heerde"
+  },
+  {
+    "setSpec": "frl",
+    "setName": "AlleFriezen"
+  },
+  {
+    "setSpec": "gab",
+    "setName": "Gemeentearchief Barneveld"
+  },
+  {
+    "setSpec": "gae",
+    "setName": "Gemeentearchief Ede"
+  },
+  {
+    "setSpec": "gav",
+    "setName": "Gemeentearchief Venlo"
+  },
+  {
+    "setSpec": "gaz",
+    "setName": "Gemeentearchief Zaanstad"
+  },
+  {
+    "setSpec": "ghn",
+    "setName": "Nationaal Archief"
+  },
+  {
+    "setSpec": "gld",
+    "setName": "Gelders Archief"
+  },
+  {
+    "setSpec": "gmb",
+    "setName": "Gemeentearchief Gemert-Bakel"
+  },
+  {
+    "setSpec": "gra",
+    "setName": "AlleGroningers"
+  },
+  {
+    "setSpec": "haw",
+    "setName": "Historisch Archief Westland"
+  },
+  {
+    "setSpec": "hco",
+    "setName": "Collectie Overijssel"
+  },
+  {
+    "setSpec": "hga",
+    "setName": "Haags Gemeentearchief"
+  },
+  {
+    "setSpec": "hng",
+    "setName": "Gemeentearchief Hengelo"
+  },
+  {
+    "setSpec": "hua",
+    "setName": "Het Utrechts Archief"
+  },
+  {
+    "setSpec": "isg",
+    "setName": "Internationaal instituut voor sociale geschiedenis"
+  },
+  {
+    "setSpec": "kbd",
+    "setName": "Koninklijke Bibliotheek"
+  },
+  {
+    "setSpec": "krd",
+    "setName": "Gemeentearchief Kerkrade"
+  },
+  {
+    "setSpec": "lgm",
+    "setName": "Nederlands Militair Erfgoed"
+  },
+  {
+    "setSpec": "mgr",
+    "setName": "Historisch Archief Midden-Groningen"
+  },
+  {
+    "setSpec": "nas",
+    "setName": "Nationaal Archief Suriname"
+  },
+  {
+    "setSpec": "nba",
+    "setName": "Nederlands Bidprentjes Archief"
+  },
+  {
+    "setSpec": "nbd",
+    "setName": "Gemeentearchief Noord-Beveland"
+  },
+  {
+    "setSpec": "nha",
+    "setName": "Noord-Hollands Archief"
+  },
+  {
+    "setSpec": "nim",
+    "setName": "Nederlands Instituut voor Militaire Historie"
+  },
+  {
+    "setSpec": "nle",
+    "setName": "Het Flevolands Archief"
+  },
+  {
+    "setSpec": "ohg",
+    "setName": "Gemeentearchief Ommen-Hardenberg"
+  },
+  {
+    "setSpec": "old",
+    "setName": "Gemeente Oldenzaal"
+  },
+  {
+    "setSpec": "pem",
+    "setName": "gemeente Peel en Maas"
+  },
+  {
+    "setSpec": "raa",
+    "setName": "Regionaal Archief Alkmaar"
+  },
+  {
+    "setSpec": "rad",
+    "setName": "Regionaal Archief Dordrecht"
+  },
+  {
+    "setSpec": "ran",
+    "setName": "Regionaal Archief Nijmegen"
+  },
+  {
+    "setSpec": "rar",
+    "setName": "Regionaal Archief Rivierenland"
+  },
+  {
+    "setSpec": "rat",
+    "setName": "Regionaal Archief Tilburg"
+  },
+  {
+    "setSpec": "rel",
+    "setName": "RHC Rijnstreek en Lopikerwaard"
+  },
+  {
+    "setSpec": "rhe",
+    "setName": "Regionaal Historisch Centrum Eindhoven"
+  },
+  {
+    "setSpec": "rhl",
+    "setName": "Historisch Centrum Limburg"
+  },
+  {
+    "setSpec": "rht",
+    "setName": "Rijckheyt, centrum voor regionale geschiedenis"
+  },
+  {
+    "setSpec": "rmd",
+    "setName": "Gemeentearchief Roermond"
+  },
+  {
+    "setSpec": "rzh",
+    "setName": "Nationaal Archief Rijksarchief Zuid-Holland"
+  },
+  {
+    "setSpec": "saa",
+    "setName": "Stadsarchief Amsterdam"
+  },
+  {
+    "setSpec": "sag",
+    "setName": "Gemeentearchief Goes"
+  },
+  {
+    "setSpec": "sch",
+    "setName": "Gemeentearchief Schiedam"
+  },
+  {
+    "setSpec": "sgo",
+    "setName": "Streekarchief Goeree-Overflakkee"
+  },
+  {
+    "setSpec": "sgv",
+    "setName": "Streekarchief Gooi en Vechtstreek"
+  },
+  {
+    "setSpec": "sha",
+    "setName": "Streekarchief Langstraat Heusden Altena"
+  },
+  {
+    "setSpec": "sla",
+    "setName": "Stad Lommel - Archiefdienst"
+  },
+  {
+    "setSpec": "smh",
+    "setName": "Streekarchief Midden-Holland"
+  },
+  {
+    "setSpec": "snv",
+    "setName": "Noord-Veluws Archief"
+  },
+  {
+    "setSpec": "srm",
+    "setName": "Streekarchief Rijnlands Midden"
+  },
+  {
+    "setSpec": "srt",
+    "setName": "Stadsarchief Rotterdam"
+  },
+  {
+    "setSpec": "svp",
+    "setName": "Streekarchief Voorne-Putten"
+  },
+  {
+    "setSpec": "swl",
+    "setName": "Gemeentearchief Steenwijkerland"
+  },
+  {
+    "setSpec": "szu",
+    "setName": "Regionaal archief Zutphen"
+  },
+  {
+    "setSpec": "thl",
+    "setName": "Gemeentearchief Tholen"
+  },
+  {
+    "setSpec": "ven",
+    "setName": "Gemeente Venray, gemeentearchief"
+  },
+  {
+    "setSpec": "vev",
+    "setName": "Regionaal Historisch Centrum Vecht en Venen"
+  },
+  {
+    "setSpec": "vls",
+    "setName": "Gemeentearchief Vlissingen"
+  },
+  {
+    "setSpec": "was",
+    "setName": "Gemeentearchief Wassenaar"
+  },
+  {
+    "setSpec": "wat",
+    "setName": "Waterlands Archief"
+  },
+  {
+    "setSpec": "wba",
+    "setName": "West Brabants Archief"
+  },
+  {
+    "setSpec": "wfa",
+    "setName": "Westfries Archief"
+  },
+  {
+    "setSpec": "zar",
+    "setName": "Zeeuws Archief"
+  },
+  {
+    "setSpec": "zdk",
+    "setName": "Gemeente Zederik"
+  },
+  {
+    "setSpec": "zou",
+    "setName": "RHC Zuidoost Utrecht"
+  },
+  {
+    "setSpec": "zst",
+    "setName": "Gemeentearchief Zeist"
+  },
+  {
+    "setSpec": "ztm",
+    "setName": "Gemeentearchief Zoetermeer"
+  }
+]

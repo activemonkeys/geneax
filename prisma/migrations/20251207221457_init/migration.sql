@@ -1,6 +1,3 @@
--- CreateEnum
-CREATE TYPE "HarvestStatus" AS ENUM ('IN_PROGRESS', 'COMPLETED', 'PAUSED', 'FAILED');
-
 -- CreateTable
 CREATE TABLE "Source" (
     "id" TEXT NOT NULL,
@@ -58,7 +55,7 @@ CREATE TABLE "HarvestLog" (
     "id" TEXT NOT NULL,
     "sourceId" TEXT NOT NULL,
     "setSpec" TEXT NOT NULL,
-    "status" "HarvestStatus" NOT NULL DEFAULT 'IN_PROGRESS',
+    "status" TEXT NOT NULL DEFAULT 'in_progress',
     "resumptionToken" TEXT,
     "recordsHarvested" INTEGER NOT NULL DEFAULT 0,
     "filesCreated" INTEGER NOT NULL DEFAULT 0,
@@ -67,6 +64,56 @@ CREATE TABLE "HarvestLog" (
     "lastError" TEXT,
 
     CONSTRAINT "HarvestLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ArchiveRegistry" (
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "oaiUrl" TEXT NOT NULL,
+    "website" TEXT,
+    "parserType" TEXT NOT NULL,
+    "parserConfig" JSONB,
+    "metadata" JSONB,
+    "overallStatus" TEXT NOT NULL DEFAULT 'unknown',
+    "lastHealthCheck" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ArchiveRegistry_pkey" PRIMARY KEY ("code")
+);
+
+-- CreateTable
+CREATE TABLE "ArchiveDataset" (
+    "id" TEXT NOT NULL,
+    "archiveCode" TEXT NOT NULL,
+    "setSpec" TEXT NOT NULL,
+    "setName" TEXT,
+    "setDescription" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'unknown',
+    "recordCount" INTEGER,
+    "lastHarvest" TIMESTAMP(3),
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ArchiveDataset_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "HarvestSession" (
+    "id" TEXT NOT NULL,
+    "datasetId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "recordsProcessed" INTEGER NOT NULL DEFAULT 0,
+    "recordsTotal" INTEGER,
+    "errors" JSONB,
+    "stats" JSONB,
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "duration" INTEGER,
+
+    CONSTRAINT "HarvestSession_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -99,8 +146,26 @@ CREATE INDEX "Person_birthYear_idx" ON "Person"("birthYear");
 -- CreateIndex
 CREATE UNIQUE INDEX "HarvestLog_sourceId_setSpec_key" ON "HarvestLog"("sourceId", "setSpec");
 
+-- CreateIndex
+CREATE INDEX "ArchiveDataset_archiveCode_idx" ON "ArchiveDataset"("archiveCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ArchiveDataset_archiveCode_setSpec_key" ON "ArchiveDataset"("archiveCode", "setSpec");
+
+-- CreateIndex
+CREATE INDEX "HarvestSession_datasetId_idx" ON "HarvestSession"("datasetId");
+
+-- CreateIndex
+CREATE INDEX "HarvestSession_status_idx" ON "HarvestSession"("status");
+
 -- AddForeignKey
 ALTER TABLE "Person" ADD CONSTRAINT "Person_recordId_recordYear_fkey" FOREIGN KEY ("recordId", "recordYear") REFERENCES "Record"("id", "eventYear") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "HarvestLog" ADD CONSTRAINT "HarvestLog_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "Source"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ArchiveDataset" ADD CONSTRAINT "ArchiveDataset_archiveCode_fkey" FOREIGN KEY ("archiveCode") REFERENCES "ArchiveRegistry"("code") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HarvestSession" ADD CONSTRAINT "HarvestSession_datasetId_fkey" FOREIGN KEY ("datasetId") REFERENCES "ArchiveDataset"("id") ON DELETE CASCADE ON UPDATE CASCADE;

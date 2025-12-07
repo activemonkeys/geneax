@@ -1,0 +1,433 @@
+📋 Geneax Project - Plan van Aanpak & Implementatie
+🎯 Waarom Dit Project?
+Het Probleem
+Nederlandse genealogische data is verspreid over 100+ archieven met ieder hun eigen systemen, interfaces en toegankelijkheid. Onderzoekers moeten:
+
+Handmatig door tientallen websites navigeren
+Verschillende zoeksystemen leren
+Data handmatig combineren en vergelijken
+Beperkte mogelijkheden voor grootschalige analyse
+
+De Oplossing: Geneax
+Een centrale, gestructureerde, doorzoekbare database van alle Nederlandse genealogische data met:
+
+Uniforme toegang tot alle bronnen via één interface
+Gestandaardiseerde data (A2A parsing + normalisatie)
+Krachtige zoekmogelijkheden (personen, families, plaatsen, periodes)
+Flexibele architectuur die nieuwe bronnen eenvoudig kan opnemen
+Open data filosofie voor onderzoekers, historici en familie onderzoekers
+
+Doelstellingen
+
+Korte termijn: 5-10 grote archieven volledig geïndexeerd
+Middellange termijn: 50+ archieven, 10+ miljoen records
+Lange termijn: Alle Nederlandse genealogische bronnen, linked data, AI-assistentie
+
+
+📊 Huidige Staat van het Project
+✅ Wat is al gebouwd (Sprint 1 - POC):
+Architectuur:
+
+✅ Flexibel database schema (geen enums, VARCHAR types)
+✅ Datum opslag met precision (year/month/day + precision indicator)
+✅ Parser registry systeem (pluggable parsers per archief)
+✅ Base A2A parser met namespace support
+✅ RelationEP support (complexe persoon-event relaties)
+
+Components:
+
+✅ OAI-PMH harvester met resumptionToken support
+✅ XML file-based storage (./data/raw/)
+✅ Processor met batch verwerking
+✅ Source configuratie in database (parserType + parserConfig JSONB)
+✅ Scripts voor stats, cleanup, migratie
+
+Data:
+
+✅ 150 test records van Open Archieven
+✅ 525 personen geëxtraheerd
+✅ Diverse record types en rollen werkend
+✅ Datum precision tracking
+
+Tech Stack:
+
+✅ Next.js 16 + React 19
+✅ PostgreSQL 17 + Prisma ORM
+✅ TypeScript
+✅ TailwindCSS + shadcn/ui (frontend libraries aanwezig)
+
+❌ Wat ontbreekt:
+Infrastructure:
+
+❌ Registry systeem voor alle Nederlandse archieven
+❌ Discovery tool (OAI-PMH endpoint scanner)
+❌ Multi-source harvest orchestration
+❌ Health monitoring per endpoint
+
+Data:
+
+❌ Directe connecties met individuele archieven
+❌ Archief-specifieke parsers (nu alleen generic A2A)
+❌ Deduplicatie logica
+
+Frontend:
+
+❌ UI voor registry management
+❌ UI voor harvest monitoring
+❌ UI voor data exploratie/zoeken
+
+
+🚀 Sprint 2: Archive Discovery & Registry System
+Doel
+Een volledig overzicht van alle Nederlandse OAI-PMH endpoints met:
+
+Welke archieven bestaan
+Welke datasets ze bevatten
+Hoe hun XML gestructureerd is
+Status (online/offline, data quality)
+Visuele interface om dit te beheren en monitoren
+
+
+📋 Implementatie Plan - Sprint 2
+Epic 1: Archive Registry Database (Prioriteit: HIGH)
+User Stories:
+
+Als developer wil ik alle archieven in een database registry hebben zodat ik ze programmatisch kan beheren
+Als developer wil ik per archief de beschikbare datasets kunnen zien
+Als developer wil ik harvest status kunnen tracken per archief/dataset
+
+Deliverables:
+Database Schema:
+├── archive_registry (master lijst archieven)
+├── archive_datasets (sets per archief)
+├── harvest_sessions (tracking van harvests)
+└── xml_files (file registry, optioneel)
+
+Prisma Models:
+├── ArchiveRegistry
+├── ArchiveDataset
+├── HarvestSession
+└── XmlFile
+Acceptatie Criteria:
+
+ Schema bestaat in database
+ Prisma models gegenereerd
+ Migratie script werkt
+ Test data kan worden toegevoegd
+
+
+Epic 2: Archive Discovery Tool (Prioriteit: HIGH)
+User Stories:
+
+Als developer wil ik een OAI-PMH endpoint kunnen scannen en automatisch de configuratie genereren
+Als developer wil ik sample records kunnen ophalen om de XML structuur te analyseren
+Als developer wil ik zien of een endpoint online is en correct werkt
+
+Deliverables:
+Scripts:
+├── src/discovery/scan-endpoint.ts (scan één endpoint)
+├── src/discovery/analyze-structure.ts (analyseer XML)
+├── src/discovery/generate-config.ts (maak config.json)
+└── src/discovery/batch-scan.ts (scan meerdere endpoints)
+
+Output:
+└── sources/nl-{archief-naam}/
+    ├── config.json
+    ├── sample-records.xml
+    └── analysis-report.md
+Acceptatie Criteria:
+
+ Kan OAI-PMH Identify uitvoeren
+ Kan ListSets ophalen en opslaan
+ Kan sample records (10-100) downloaden
+ Genereert config.json met alle metadata
+ Detecteert A2A variant (namespace, RelationEP, etc.)
+
+
+Epic 3: Known Archives List (Prioriteit: MEDIUM)
+User Stories:
+
+Als developer wil ik een handmatige lijst van bekende Nederlandse archieven hebben
+Als gebruiker wil ik weten welke archieven er zijn en wat hun coverage is
+
+Deliverables:
+Data:
+└── sources/
+    ├── registry.json (master lijst)
+    ├── nl-nationaal-archief/
+    ├── nl-gelders-archief/
+    ├── nl-stadsarchief-amsterdam/
+    ├── nl-regionaal-archief-leiden/
+    ├── nl-bhic/
+    ├── nl-tresoar/
+    ├── nl-zeeuws-archief/
+    ├── nl-drents-archief/
+    ├── nl-groninger-archieven/
+    └── nl-west-brabants-archief/
+    
+Script:
+└── src/scripts/populate-registry.ts (import registry.json naar database)
+registry.json structuur:
+json{
+  "version": "1.0",
+  "lastUpdated": "2025-12-07",
+  "archives": [
+    {
+      "code": "NL_NATIONAAL_ARCHIEF",
+      "name": "Nationaal Archief",
+      "region": "Zuid-Holland",
+      "city": "Den Haag",
+      "oaiUrl": "https://www.nationaalarchief.nl/oai/oai",
+      "website": "https://www.nationaalarchief.nl",
+      "estimatedRecords": 20000000,
+      "coverage": {
+        "dtb": {"from": 1550, "to": 1811},
+        "bs": {"from": 1811, "to": 1940}
+      }
+    }
+  ]
+}
+```
+
+**Acceptatie Criteria:**
+- [ ] registry.json met minimaal 10 grote archieven
+- [ ] Alle URLs geverifieerd (handmatig)
+- [ ] Geschatte aantallen toegevoegd
+- [ ] Import script werkt
+
+---
+
+### Epic 4: Web UI - Registry Dashboard (Prioriteit: HIGH)
+
+**User Stories:**
+1. Als gebruiker wil ik een overzicht zien van alle archieven
+2. Als gebruiker wil ik kunnen filteren op regio/status
+3. Als gebruiker wil ik details van een archief kunnen bekijken
+4. Als developer wil ik de harvest status per archief kunnen zien
+
+**Deliverables:**
+```
+Pages:
+├── /app/registry/page.tsx (overzicht alle archieven)
+├── /app/registry/[code]/page.tsx (details van archief)
+└── /app/registry/[code]/datasets/page.tsx (datasets van archief)
+
+Components:
+├── src/components/registry/
+│   ├── archive-list.tsx (tabel/grid van archieven)
+│   ├── archive-card.tsx (card view van archief)
+│   ├── archive-status-badge.tsx (online/offline indicator)
+│   ├── dataset-list.tsx (lijst datasets per archief)
+│   ├── harvest-progress.tsx (voortgang visualisatie)
+│   └── coverage-chart.tsx (periode coverage visualisatie)
+
+API Routes:
+├── /app/api/registry/route.ts (GET all archives)
+├── /app/api/registry/[code]/route.ts (GET archive details)
+└── /app/api/registry/[code]/datasets/route.ts (GET datasets)
+```
+
+**UI Features:**
+- Tabel met alle archieven (DataTable met shadcn)
+- Status indicators (online/offline, last checked)
+- Filter op regio, status, data type (BS/DTB)
+- Zoeken op naam
+- Sort op aantal records, laatste harvest
+- Detail pagina met:
+  - Archief info
+  - Beschikbare datasets
+  - Harvest geschiedenis
+  - Sample records
+  - Download statistieken
+
+**Acceptatie Criteria:**
+- [ ] Registry overzicht pagina werkt
+- [ ] Kan filteren en zoeken
+- [ ] Detail pagina toont alle info
+- [ ] Harvest status visualisatie
+- [ ] Responsive design
+- [ ] Loading states
+- [ ] Error handling
+
+---
+
+### Epic 5: Discovery UI (Prioriteit: MEDIUM)
+
+**User Stories:**
+1. Als developer wil ik via de UI een nieuw endpoint kunnen toevoegen
+2. Als developer wil ik de scan/discovery kunnen starten via de UI
+3. Als developer wil ik de resultaten van een scan kunnen bekijken
+
+**Deliverables:**
+```
+Pages:
+├── /app/discovery/page.tsx (discovery tool interface)
+└── /app/discovery/[scanId]/page.tsx (scan resultaten)
+
+Components:
+├── src/components/discovery/
+│   ├── endpoint-scanner-form.tsx (form voor nieuwe endpoint)
+│   ├── scan-progress.tsx (live progress van scan)
+│   ├── xml-structure-viewer.tsx (JSON tree van XML structuur)
+│   ├── sample-records-viewer.tsx (preview van records)
+│   └── config-generator.tsx (preview + edit van config.json)
+
+API Routes:
+├── /app/api/discovery/scan/route.ts (POST start scan)
+└── /app/api/discovery/[scanId]/route.ts (GET scan results)
+```
+
+**Acceptatie Criteria:**
+- [ ] Kan endpoint URL invoeren en scannen
+- [ ] Toont live progress tijdens scan
+- [ ] XML structuur visualisatie werkt
+- [ ] Config.json kan worden gedownload
+- [ ] Kan config direct opslaan naar registry
+
+---
+
+### Epic 6: Enhanced Harvester (Prioriteit: MEDIUM)
+
+**User Stories:**
+1. Als developer wil ik meerdere archieven tegelijk kunnen harvesten
+2. Als developer wil ik harvest jobs kunnen stoppen/pauzeren/hervatten
+3. Als developer wil ik harvest prioriteit kunnen instellen
+
+**Deliverables:**
+```
+Enhanced Scripts:
+├── src/harvester/multi-source-harvest.ts (harvest meerdere sources)
+├── src/harvester/harvest-scheduler.ts (plan harvests)
+└── src/harvester/harvest-monitor.ts (monitor lopende harvests)
+
+Features:
+- Parallel harvesting (max N tegelijk)
+- Priority queue
+- Auto-retry op failures
+- Rate limiting per archief
+- Progress notifications
+Acceptatie Criteria:
+
+ Kan 5 archieven parallel harvesten
+ Respecteert rate limits
+ Auto-retry werkt
+ Progress wordt gelogd in database
+ Kan worden gestopt/hervat
+
+
+📅 Timeline Sprint 2
+Week 1: Foundation
+
+Dag 1-2: Database schema + migrations (Epic 1)
+Dag 3-4: Discovery tool basics (Epic 2)
+Dag 5: Registry.json samenstellen (Epic 3)
+
+Week 2: Discovery & Data
+
+Dag 1-2: Discovery tool verfijnen (Epic 2)
+Dag 3-4: Scan 10 grote archieven (Epic 3)
+Dag 5: Data cleanup en validatie
+
+Week 3: Frontend
+
+Dag 1-3: Registry Dashboard UI (Epic 4)
+Dag 4-5: Discovery UI (Epic 5)
+
+Week 4: Integration & Testing
+
+Dag 1-2: Enhanced harvester (Epic 6)
+Dag 3-4: End-to-end testing
+Dag 5: Documentatie + Sprint Review
+
+
+🎯 Definition of Done - Sprint 2
+Must Have:
+
+ Database registry met 10+ archieven
+ Discovery tool kan endpoint scannen
+ UI toont alle archieven + status
+ Kan harvest starten via UI of CLI
+ Documentatie bijgewerkt
+
+Should Have:
+
+ 3+ archieven succesvol geharvest
+ Archive-specific parser voor 1 archief
+ Harvest monitoring dashboard
+
+Could Have:
+
+ Auto-discovery (crawl bekende lijsten)
+ Email notifications bij harvest completion
+ Data quality dashboard
+
+
+📝 Handoff naar Volgende Prompt
+Context voor AI Assistant:
+markdown# Geneax - Sprint 2: Archive Discovery & Registry
+
+## Project Doel
+Centrale database van alle Nederlandse genealogische data met uniforme toegang.
+
+## Huidige Status (einde Sprint 1)
+- ✅ Werkende POC met 150 records van Open Archieven
+- ✅ Flexibel database schema
+- ✅ A2A parser met RelationEP support
+- ✅ File-based XML storage
+- ✅ Next.js + PostgreSQL + Prisma stack
+
+## Sprint 2 Doel
+Volledig overzicht van Nederlandse archieven + discovery tool + management UI
+
+## Wat te bouwen:
+1. Archive Registry database schema
+2. OAI-PMH discovery tool (scan endpoints)
+3. registry.json met 10+ bekende archieven
+4. Web UI voor registry management
+5. Discovery UI voor nieuwe endpoints
+6. Multi-source harvester
+
+## Tech Stack:
+- Next.js 16 App Router
+- PostgreSQL 17
+- Prisma ORM
+- shadcn/ui components
+- TypeScript
+
+## Belangrijke Bestanden:
+- prisma/schema.prisma (database schema)
+- src/lib/a2a-parser.ts (huidige parser)
+- src/harvester/harvest.ts (huidige harvester)
+- src/types/index.ts (TypeScript types)
+
+## Start met:
+Epic 1 - Database schema voor archive registry
+```
+
+---
+
+## 🎨 UI Design Voorbeelden (shadcn componenten)
+
+### Registry Dashboard:
+```
+Gebruik:
+- DataTable (sorting, filtering)
+- Badge (status indicators)
+- Card (archive cards)
+- Progress (harvest progress)
+- Select (filters)
+- Input (search)
+- Button (actions)
+```
+
+### Discovery Tool:
+```
+Gebruik:
+- Form (endpoint input)
+- Tabs (Identify/ListSets/Sample Records)
+- Accordion (XML structuur)
+- Code block (config.json preview)
+- Alert (errors/warnings)
+- Spinner (loading states)
+
+Dit document bevat alles wat de volgende AI assistant nodig heeft om Sprint 2 succesvol te implementeren! 🚀
