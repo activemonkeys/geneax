@@ -1,0 +1,98 @@
+PS C:\Users\wschulze\Development\geneax> pnpm install
+ WARN  Moving zod that was installed by a different package manager to "node_modules/.ignored"
+Packages: +12
+++++++++++++
+Progress: resolved 435, reused 366, downloaded 0, added 12, done
+
+dependencies:
++ class-variance-authority 0.7.1
++ clsx 2.1.1
++ geist 1.5.1
++ lucide-react 0.556.0
++ next-themes 0.4.6
++ tailwind-merge 3.4.0
++ tailwindcss-animate 1.0.7
++ zod 4.1.13
+
+devDependencies:
+- babel-plugin-react-compiler 1.0.0
++ cross-env 10.1.0
++ prettier 3.7.4
++ prettier-plugin-pkg 0.21.2
++ prettier-plugin-tailwindcss 0.7.2
+
+Done in 3.6s using pnpm v10.12.1
+PS C:\Users\wschulze\Development\geneax> ncu
+Checking C:\Users\wschulze\Development\geneax\package.json
+[====================] 23/23 100%
+
+All dependencies match the latest package versions :)
+PS C:\Users\wschulze\Development\geneax> pnpm devs
+
+> geneax@0.1.0 devs C:\Users\wschulze\Development\geneax
+> next dev --experimental-https
+
+ ⚠ Self-signed certificates are currently an experimental feature, use with caution.
+   Attempting to generate self signed certificate. This may prompt for your password
+   CA Root certificate created in C:\Users\wschulze\AppData\Local\mkcert
+   Certificates created in C:\Users\wschulze\Development\geneax\certificates
+   Adding certificates to .gitignore
+   ▲ Next.js 16.0.7 (Turbopack)
+   - Local:         https://localhost:3000
+   - Network:       https://192.168.178.45:3000
+
+ ✓ Starting...
+ ✓ Ready in 580ms
+ GET / 200 in 1076ms (compile: 990ms, render: 86ms)
+ ✓ Compiled in 22ms
+PS C:\Users\wschulze\Development\geneax> 
+
+PS C:\Users\wschulze\Development\geneax> pnpm add -D prisma @types/node
+Downloading prisma@7.1.0: 7,04 MB/7,04 MB, done
+Packages: +78
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 513, reused 428, downloaded 16, added 78, done
+
+devDependencies:
++ prisma 7.1.0
+
+╭ Warning ───────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                            │
+│   Ignored build scripts: @prisma/engines, prisma.                                          │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.   │
+│                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────╯
+
+Done in 3.6s using pnpm v10.12.1
+PS C:\Users\wschulze\Development\geneax> pnpm approve-builds
+√ Choose which packages to build (Press <space> to select, <a> to toggle all, <i> to invert selection) · @prisma/engines, prisma
+√ The next packages will now be built: @prisma/engines, prisma.
+Do you approve? (y/N) · true
+node_modules/.pnpm/@prisma+engines@7.1.0/node_modules/@prisma/engines: Running postinstall script, done in 744ms
+node_modules/.pnpm/prisma@7.1.0_@types+react@1_e10f5899343d2a17c7626cf9b2018c43/node_modules/prisma: Running preinstall script, done in 160ms
+PS C:\Users\wschulze\Development\geneax> pnpm prisma init   
+
+Initialized Prisma in your project
+
+  prisma/
+    schema.prisma
+  prisma.config.ts
+  .env
+
+warn You already have a .gitignore file. Don't forget to add .env in it to not commit any private information.
+
+Next, choose how you want to set up your database:
+
+CONNECT EXISTING DATABASE:
+  1. Configure your DATABASE_URL in prisma.config.ts
+  2. Run prisma db pull to introspect your database.
+
+CREATE NEW DATABASE:
+  Local: npx prisma dev (runs Postgres locally in your terminal)
+  Cloud: npx create-db (creates a free Prisma Postgres database)
+
+Then, define your models in prisma/schema.prisma and run prisma migrate dev to apply your schema.
+
+Learn more: https://pris.ly/getting-started
+
+PS C:\Users\wschulze\Development\geneax> 
