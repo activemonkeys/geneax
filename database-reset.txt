@@ -1,0 +1,39 @@
+Optie 1: Interactief (met bevestiging)
+bash# Alles verwijderen
+pnpm clean-db -- --all
+
+# Alleen personen
+pnpm clean-db -- --persons
+
+# Records en personen
+pnpm clean-db -- --records
+Optie 2: Direct (zonder bevestiging)
+bash# Alles verwijderen zonder bevestiging
+pnpm clean-db -- --all -y
+
+# Alleen personen zonder bevestiging
+pnpm clean-db -- --persons -y
+Optie 3: Complete Reset (inclusief XML files)
+bashpnpm reset-db
+Dit verwijdert:
+
+Alle database records
+Alle XML bestanden in ./data/raw/
+
+Voorbeelden
+bash# Alleen personen opnieuw verwerken
+pnpm clean-db -- --persons -y
+pnpm process
+
+# Volledige fresh start
+pnpm reset-db
+pnpm add-source
+pnpm harvest -- --source=openarch --set=all --limit=100
+pnpm process
+pnpm count
+
+# Records opnieuw verwerken (personen worden automatisch verwijderd)
+pnpm clean-db -- --records -y
+pnpm process
+Test het:
+bashpnpm clean-db

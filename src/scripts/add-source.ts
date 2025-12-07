@@ -1,37 +1,31 @@
-// Bestand: src/scripts/add-source.ts (VERBETERDE VERSIE)
-
 import { prisma } from '@/lib/prisma';
 import oaiClient from '@/lib/oai-client';
+import type { SourceConfig } from '@/types/index';
 
-// ⭐ UPDATED: Gebruik Open Archieven als primaire bron (meest stabiel)
-// Deze aggregeert data van meerdere Nederlandse archieven
-const KNOWN_SOURCES = [
+const KNOWN_SOURCES: SourceConfig[] = [
     {
         code: 'OPENARCH',
         name: 'Open Archieven (Aggregator)',
         oaiUrl: 'https://api.openarch.nl/oai-pmh/',
-        sets: ['bs_geboorte', 'bs_huwelijk', 'bs_overlijden', 'dtb_dopen', 'dtb_trouwen', 'dtb_begraven']
+        sets: ['all'],
+        parserType: 'a2a',
+        parserConfig: {
+            personRoleMapping: {
+                'Geregistreerde': 'REGISTRANT',
+            },
+            recordTypeMapping: {
+                'other:': 'OTHER',
+                'other:Bevolkingsregister': 'POPULATION_REGISTER',
+            },
+        },
     },
     {
         code: 'BHIC',
         name: 'Brabants Historisch Informatie Centrum',
         oaiUrl: 'https://api.bhic.nl/oai-pmh',
-        sets: ['bs_geboorte', 'bs_huwelijk', 'bs_overlijden']
+        sets: ['bs_geboorte', 'bs_huwelijk', 'bs_overlijden'],
+        parserType: 'a2a',
     },
-    // ⭐ Deze zijn tijdelijk uitgecommentarieerd vanwege DNS problemen
-    // Je kunt ze later weer toevoegen als de endpoints beschikbaar zijn
-    // { 
-    //     code: 'SAA', 
-    //     name: 'Stadsarchief Amsterdam', 
-    //     oaiUrl: 'https://webservices.picturae.com/a2a/299ac5c6-51d4-4bab-9fd1-c0afc7a94fd6', 
-    //     sets: ['dtb_dopen', 'dtb_trouwen', 'dtb_begraven', 'bs_geboorte'] 
-    // },
-    // { 
-    //     code: 'GA', 
-    //     name: 'Gelders Archief', 
-    //     oaiUrl: 'https://www.geldersarchief.nl/oai', 
-    //     sets: ['genealogie'] 
-    // },
 ];
 
 async function main() {
@@ -64,12 +58,15 @@ async function main() {
                     oaiUrl: src.oaiUrl,
                     availableSets: src.sets,
                     isActive: true,
+                    parserType: src.parserType,
+                    parserConfig: (src.parserConfig || {}) as any,
                 },
             });
             console.log(`✅ Added ${src.code}`);
             if (check.repositoryName) {
                 console.log(`   Repository: ${check.repositoryName}`);
             }
+            console.log(`   Parser: ${src.parserType}`);
         } else {
             console.log(`❌ Failed ${src.code}: ${check.error}`);
             console.log(`   Tip: Deze bron wordt overgeslagen maar kan later handmatig toegevoegd worden.`);

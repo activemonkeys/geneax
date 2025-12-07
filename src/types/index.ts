@@ -1,11 +1,3 @@
-// src/types/index.ts
-
-import type { RecordType, PersonRole, HarvestStatus } from '@/generated/prisma/client';
-
-// Re-export Prisma types
-export type { RecordType, PersonRole, HarvestStatus };
-
-// A2A XML Structure with namespace support
 export interface A2AData {
     Source?: any;
     Person?: any;
@@ -56,14 +48,20 @@ export interface A2AEvent {
     [key: string]: any;
 }
 
-// Parsed Record Structure
+export interface ParsedDate {
+    year: number;
+    month?: number;
+    day?: number;
+    precision: 'year' | 'month' | 'day' | 'circa' | 'range' | 'unknown';
+    original?: string;
+}
+
 export interface ParsedRecord {
     externalId: string;
     sourceCode: string;
     setSpec: string;
     recordType: string;
-    eventYear: number;
-    eventDate?: string;
+    eventDate: ParsedDate;
     eventPlace?: string;
     persons: Array<{
         role: string;
@@ -78,7 +76,6 @@ export interface ParsedRecord {
     rawData: any;
 }
 
-// OAI-PMH Types
 export interface OAIResponse {
     'OAI-PMH'?: {
         responseDate?: string;
@@ -122,7 +119,6 @@ export interface OAIResumptionToken {
     '@_cursor'?: string;
 }
 
-// Harvest Configuration
 export interface HarvestConfig {
     sourceCode: string;
     setSpec: string;
@@ -136,4 +132,25 @@ export interface HarvestResult {
     recordsHarvested: number;
     resumptionToken?: string;
     error?: string;
+}
+
+export interface ParserConfig {
+    personRoleMapping?: Record<string, string>;
+    recordTypeMapping?: Record<string, string>;
+    xmlPaths?: {
+        person?: string[];
+        relation?: string[];
+        source?: string[];
+        date?: string[];
+    };
+    customLogic?: string;
+}
+
+export interface SourceConfig {
+    code: string;
+    name: string;
+    oaiUrl: string;
+    sets: string[];
+    parserType: string;
+    parserConfig?: ParserConfig;
 }

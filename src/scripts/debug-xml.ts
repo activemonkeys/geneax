@@ -1,9 +1,7 @@
-// src/scripts/debug-xml.ts
-
 import fs from 'fs';
 import path from 'path';
 import { XMLParser } from 'fast-xml-parser';
-import { parseA2ARecord } from '@/lib/a2a-parser';
+import { A2AParser } from '@/lib/a2a-parser';
 
 const parser = new XMLParser({
     ignoreAttributes: false,
@@ -12,8 +10,9 @@ const parser = new XMLParser({
     isArray: (name) => ['record', 'Relation', 'Person'].includes(name),
 });
 
+const a2aParser = new A2AParser();
+
 async function debugFirstRecord() {
-    // Vind het XML bestand
     const xmlDir = './data/raw/openarch/all';
     const files = fs.readdirSync(xmlDir).filter(f => f.endsWith('.xml'));
 
@@ -37,14 +36,12 @@ async function debugFirstRecord() {
     const recList = Array.isArray(records) ? records : [records];
     console.log(`Total records in file: ${recList.length}\n`);
 
-    // Debug eerste 3 records
     for (let i = 0; i < Math.min(3, recList.length); i++) {
         const r = recList[i];
 
         console.log(`\n=== Record ${i + 1} ===`);
         console.log('Identifier:', r.header?.identifier);
 
-        // Check metadata structure
         const a2a = r.metadata?.A2A || r.metadata?.['a2a:A2A'];
 
         if (!a2a) {
@@ -55,7 +52,6 @@ async function debugFirstRecord() {
 
         console.log('✅ A2A data found');
 
-        // Show Source info
         if (a2a.Source) {
             console.log('\nSource:');
             console.log('  Type:', a2a.Source.SourceType?.['#text']);
@@ -63,7 +59,6 @@ async function debugFirstRecord() {
             console.log('  Place:', a2a.Source.SourcePlace?.Place?.['#text']);
         }
 
-        // Show Person info
         if (a2a.Person) {
             const persons = Array.isArray(a2a.Person) ? a2a.Person : [a2a.Person];
             console.log(`\nPersons: ${persons.length}`);
@@ -74,7 +69,6 @@ async function debugFirstRecord() {
             console.log('\n❌ No Person found');
         }
 
-        // Show Relation info
         if (a2a.Relation) {
             const relations = Array.isArray(a2a.Relation) ? a2a.Relation : [a2a.Relation];
             console.log(`\nRelations: ${relations.length}`);
@@ -88,10 +82,9 @@ async function debugFirstRecord() {
             console.log('\n❌ No Relations found');
         }
 
-        // Try to parse with our parser
         console.log('\n--- Parsing with A2A parser ---');
         const extId = r.header?.identifier || `record_${i}`;
-        const parsedRec = parseA2ARecord(a2a, {
+        const parsedRec = a2aParser.parse(a2a, {
             sourceCode: 'OPENARCH',
             setSpec: 'all',
             externalId: extId
@@ -100,9 +93,9 @@ async function debugFirstRecord() {
         if (parsedRec) {
             console.log('✅ Parsed successfully');
             console.log('  Type:', parsedRec.recordType);
-            console.log('  Year:', parsedRec.eventYear);
+            console.log('  Year:', parsedRec.eventDate.year);
             console.log('  Persons extracted:', parsedRec.persons.length);
-            parsedRec.persons.forEach(p => {
+            parsedRec.persons.forEach((p: any) => {
                 console.log(`    - ${p.role}: ${p.givenName} ${p.surname || ''}`);
             });
         } else {

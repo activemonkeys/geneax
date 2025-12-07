@@ -1,5 +1,0 @@
--- AlterEnum
-ALTER TYPE "PersonRole" ADD VALUE 'REGISTRANT';
-
--- AlterEnum
-ALTER TYPE "RecordType" ADD VALUE 'POPULATION_REGISTER';

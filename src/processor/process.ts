@@ -1,5 +1,3 @@
-// src/processor/process.ts
-
 import fs from 'fs';
 import path from 'path';
 import { parseArgs } from 'util';
@@ -7,7 +5,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { prisma } from '@/lib/prisma';
 import { config } from '@/lib/config';
 import logger from '@/lib/logger';
-import { parseA2ARecord } from '@/lib/a2a-parser';
+import parserRegistry from '@/lib/parser-registry';
 import type { OAIResponse, ParsedRecord } from '@/types/index';
 
 const parser = new XMLParser({
@@ -65,34 +63,22 @@ function findXmlFiles(cfg: ProcessConfig): string[] {
     return files.sort();
 }
 
-// ⭐ NIEUWE HELPER FUNCTIE: Converteer string naar Date
-function parseEventDate(dateString: string | undefined): Date | undefined {
-    if (!dateString) return undefined;
-
-    try {
-        // Als het al een volledige ISO timestamp is
-        if (dateString.includes('T')) {
-            return new Date(dateString);
-        }
-
-        // Als het alleen een datum is (YYYY-MM-DD), voeg tijd toe
-        const date = new Date(dateString + 'T00:00:00Z');
-
-        // Check of de datum geldig is
-        if (isNaN(date.getTime())) {
-            return undefined;
-        }
-
-        return date;
-    } catch {
-        return undefined;
-    }
-}
-
 async function processFile(filePath: string, dryRun: boolean): Promise<{ processed: number, created: number, errors: number }> {
     const parts = filePath.split(path.sep);
     const setSpec = parts[parts.length - 2] || 'unknown';
     const sourceCode = parts[parts.length - 3]?.toUpperCase() || 'UNKNOWN';
+
+    const source = await prisma.source.findUnique({ where: { code: sourceCode } });
+    if (!source) {
+        logger.error(`Source not found: ${sourceCode}`);
+        return { processed: 0, created: 0, errors: 1 };
+    }
+
+    const parserInstance = parserRegistry.get(source.parserType, source.parserConfig as any);
+    if (!parserInstance) {
+        logger.error(`Parser not found: ${source.parserType}`);
+        return { processed: 0, created: 0, errors: 1 };
+    }
 
     const xml = fs.readFileSync(filePath, 'utf-8');
     let parsed: OAIResponse;
@@ -114,7 +100,9 @@ async function processFile(filePath: string, dryRun: boolean): Promise<{ process
         if (!extId) continue;
 
         const a2a = r.metadata?.A2A || r.metadata?.['a2a:A2A'];
-        const p = parseA2ARecord(a2a, { sourceCode, setSpec, externalId: extId });
+        if (!a2a) continue;
+
+        const p = parserInstance.parse(a2a, { sourceCode, setSpec, externalId: extId, config: source.parserConfig as any });
         if (p) parsedRecs.push(p);
     }
 
@@ -129,41 +117,46 @@ async function processFile(filePath: string, dryRun: boolean): Promise<{ process
         await prisma.$transaction(async (tx) => {
             for (const rec of batch) {
                 const safeRawData = rec.rawData as any;
-                const eventDateParsed = parseEventDate(rec.eventDate); // ⭐ NIEUW
 
                 await tx.record.upsert({
-                    where: { id_eventYear: { id: rec.externalId, eventYear: rec.eventYear } },
+                    where: { id_eventYear: { id: rec.externalId, eventYear: rec.eventDate.year } },
                     create: {
                         id: rec.externalId,
                         sourceCode: rec.sourceCode,
                         setSpec: rec.setSpec,
-                        recordType: rec.recordType as any,
-                        eventYear: rec.eventYear,
-                        eventDate: eventDateParsed, // ⭐ GEBRUIK GEPARSEERDE DATUM
+                        recordType: rec.recordType,
+                        eventYear: rec.eventDate.year,
+                        eventMonth: rec.eventDate.month,
+                        eventDay: rec.eventDate.day,
+                        eventDatePrecision: rec.eventDate.precision,
+                        eventDateOriginal: rec.eventDate.original,
                         eventPlace: rec.eventPlace,
                         rawData: safeRawData,
                     },
                     update: {
                         rawData: safeRawData,
-                        eventDate: eventDateParsed, // ⭐ GEBRUIK GEPARSEERDE DATUM
+                        eventMonth: rec.eventDate.month,
+                        eventDay: rec.eventDate.day,
+                        eventDatePrecision: rec.eventDate.precision,
+                        eventDateOriginal: rec.eventDate.original,
                         eventPlace: rec.eventPlace
                     },
                 });
 
-                await tx.person.deleteMany({ where: { recordId: rec.externalId, recordYear: rec.eventYear } });
+                await tx.person.deleteMany({ where: { recordId: rec.externalId, recordYear: rec.eventDate.year } });
 
                 if (rec.persons.length > 0) {
                     await tx.person.createMany({
                         data: rec.persons.map(p => ({
                             recordId: rec.externalId,
-                            recordYear: rec.eventYear,
-                            role: p.role as any,
+                            recordYear: rec.eventDate.year,
+                            role: p.role,
                             givenName: p.givenName,
                             surname: p.surname,
                             patronym: p.patronym,
                             prefix: p.prefix,
                             age: p.age,
-                            birthYear: (p.age && rec.eventYear) ? rec.eventYear - p.age : undefined,
+                            birthYear: (p.age && rec.eventDate.year) ? rec.eventDate.year - p.age : undefined,
                             occupation: p.occupation,
                             residence: p.residence,
                         })),

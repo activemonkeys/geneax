@@ -1,5 +1,3 @@
-// src/scripts/count-persons.ts
-
 import { prisma } from '@/lib/prisma';
 
 async function main() {
@@ -12,7 +10,6 @@ async function main() {
     console.log(`Persons: ${personCount}`);
 
     if (personCount > 0) {
-        // Show some example persons
         const samples = await prisma.person.findMany({
             take: 5,
             select: {
@@ -28,7 +25,6 @@ async function main() {
             console.log(`${i + 1}. ${p.role}: ${p.givenName || '?'} ${p.surname || '?'} (${p.residence || 'unknown'})`);
         });
 
-        // Count by role
         const byRole = await prisma.person.groupBy({
             by: ['role'],
             _count: true,

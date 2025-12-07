@@ -1,7 +1,7 @@
-// Bestand: src/scripts/test-parser.ts
-
-import { parseA2ARecord } from '@/lib/a2a-parser';
+import { A2AParser } from '@/lib/a2a-parser';
 import type { A2AData } from '@/types/index';
+
+const a2aParser = new A2AParser();
 
 const sampleData: A2AData = {
     Source: {
@@ -29,11 +29,11 @@ const sampleData: A2AData = {
 
 function main() {
     console.log('Testing Parser...');
-    const res = parseA2ARecord(sampleData, { sourceCode: 'TEST', setSpec: 'bs_geboorte', externalId: '1' });
+    const res = a2aParser.parse(sampleData, { sourceCode: 'TEST', setSpec: 'bs_geboorte', externalId: '1' });
 
     if (res) {
         console.log(`✅ Parsed Type: ${res.recordType}`);
-        console.log(`✅ Year: ${res.eventYear}`);
+        console.log(`✅ Year: ${res.eventDate.year}`);
         console.log(`✅ Persons found: ${res.persons.length}`);
         res.persons.forEach(p => console.log(`   - ${p.role}: ${p.givenName} ${p.surname || ''}`));
     } else {

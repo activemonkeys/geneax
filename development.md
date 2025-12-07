@@ -12,6 +12,9 @@ pnpm prisma migrate dev --name init_docker
 pnpm prisma migrate dev --name add_population_register
 pnpm prisma studio
 
+npx prisma migrate reset // om de data te resetten, verwijder daarvoor alle migraties in de prisma folder
+npx prisma migrate dev --name init
+
 ## Core Development
 
 ### Stap 1: Test de A2A parser (geen database nodig)

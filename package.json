@@ -1,6 +1,6 @@
 {
     "name": "geneax",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "private": true,
     "type": "module",
     "scripts": {
@@ -11,6 +11,7 @@
         "db:migrate": "pnpm with-env prisma migrate dev",
         "db:reset": "pnpm with-env prisma migrate reset",
         "db:studio": "pnpm prisma studio",
+        "db:migrate-flexible": "psql -d geneax -f prisma/migrations/flexible_schema.sql && pnpm db:generate",
         "dev": "next dev",
         "devs": "next dev --experimental-https",
         "format:check": "prettier --check \"**/*.{js,jsx,cjs,mjs,ts,tsx,json,yml,yaml}\" --cache",
@@ -24,6 +25,11 @@
         "harvest": "tsx src/harvester/harvest.ts",
         "process": "tsx src/processor/process.ts",
         "add-source": "tsx src/scripts/add-source.ts",
+        "migrate-data": "tsx src/scripts/migrate-existing-data.ts",
+        "stats": "tsx src/scripts/stats.ts",
+        "count": "tsx src/scripts/count-persons.ts",
+        "clean-db": "tsx src/scripts/clean-db.ts",
+        "reset-db": "tsx src/scripts/reset-db.ts",
         "test:oai": "tsx src/scripts/test-oai.ts",
         "test:parser": "tsx src/scripts/test-parser.ts",
         "test:db": "tsx src/scripts/test-db.ts"

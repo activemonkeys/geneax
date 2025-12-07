@@ -1,11 +1,8 @@
-// src/scripts/stats.ts
-
 import { prisma } from '@/lib/prisma';
 
 async function main() {
     console.log('\n📊 Complete Database Statistics\n');
 
-    // Records by type
     const byType = await prisma.record.groupBy({
         by: ['recordType'],
         _count: true,
@@ -16,7 +13,6 @@ async function main() {
         console.log(`  ${r.recordType}: ${r._count}`);
     });
 
-    // Records by year range
     const yearStats = await prisma.$queryRaw<Array<{ year_range: string, count: bigint }>>`
         SELECT 
             CASE 
@@ -37,7 +33,16 @@ async function main() {
         console.log(`  ${r.year_range}: ${r.count}`);
     });
 
-    // Top 10 plaatsen
+    const datePrecision = await prisma.record.groupBy({
+        by: ['eventDatePrecision'],
+        _count: true,
+    });
+
+    console.log('\nDate Precision Distribution:');
+    datePrecision.forEach(r => {
+        console.log(`  ${r.eventDatePrecision || 'null'}: ${r._count}`);
+    });
+
     const topPlaces = await prisma.$queryRaw<Array<{ place: string, count: bigint }>>`
         SELECT "eventPlace" as place, COUNT(*) as count
         FROM "Record"
@@ -52,7 +57,6 @@ async function main() {
         console.log(`  ${i + 1}. ${r.place}: ${r.count}`);
     });
 
-    // Top achternamen
     const topSurnames = await prisma.$queryRaw<Array<{ surname: string, count: bigint }>>`
         SELECT surname, COUNT(*) as count
         FROM "Person"
@@ -67,7 +71,6 @@ async function main() {
         console.log(`  ${i + 1}. ${r.surname}: ${r.count}`);
     });
 
-    // Persons met leeftijd
     const withAge = await prisma.person.count({
         where: { age: { not: null } }
     });

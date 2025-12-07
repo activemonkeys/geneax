@@ -1,11 +1,5 @@
 -- CreateEnum
-CREATE TYPE "RecordType" AS ENUM ('BS_BIRTH', 'BS_MARRIAGE', 'BS_DEATH', 'BS_DIVORCE', 'DTB_BAPTISM', 'DTB_MARRIAGE', 'DTB_BURIAL', 'OTHER');
-
--- CreateEnum
-CREATE TYPE "PersonRole" AS ENUM ('CHILD', 'FATHER', 'MOTHER', 'DECLARANT', 'GROOM', 'BRIDE', 'GROOM_FATHER', 'GROOM_MOTHER', 'BRIDE_FATHER', 'BRIDE_MOTHER', 'DECEASED', 'PARTNER', 'BAPTIZED', 'GODFATHER', 'GODMOTHER', 'WITNESS', 'OTHER');
-
--- CreateEnum
-CREATE TYPE "HarvestStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'PAUSED');
+CREATE TYPE "HarvestStatus" AS ENUM ('IN_PROGRESS', 'COMPLETED', 'PAUSED', 'FAILED');
 
 -- CreateTable
 CREATE TABLE "Source" (
@@ -15,6 +9,8 @@ CREATE TABLE "Source" (
     "oaiUrl" TEXT NOT NULL,
     "availableSets" TEXT[],
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "parserType" TEXT NOT NULL DEFAULT 'a2a',
+    "parserConfig" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -24,11 +20,14 @@ CREATE TABLE "Source" (
 -- CreateTable
 CREATE TABLE "Record" (
     "id" TEXT NOT NULL,
+    "eventYear" INTEGER NOT NULL,
     "sourceCode" TEXT NOT NULL,
     "setSpec" TEXT NOT NULL,
-    "recordType" "RecordType" NOT NULL,
-    "eventYear" INTEGER NOT NULL,
-    "eventDate" TIMESTAMP(3),
+    "recordType" TEXT NOT NULL,
+    "eventMonth" INTEGER,
+    "eventDay" INTEGER,
+    "eventDatePrecision" TEXT,
+    "eventDateOriginal" TEXT,
     "eventPlace" TEXT,
     "rawData" JSONB NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -41,7 +40,7 @@ CREATE TABLE "Person" (
     "id" TEXT NOT NULL,
     "recordId" TEXT NOT NULL,
     "recordYear" INTEGER NOT NULL,
-    "role" "PersonRole" NOT NULL,
+    "role" TEXT NOT NULL,
     "givenName" TEXT,
     "surname" TEXT,
     "patronym" TEXT,
@@ -50,17 +49,16 @@ CREATE TABLE "Person" (
     "birthYear" INTEGER,
     "occupation" TEXT,
     "residence" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Person_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "HarvestLog" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "sourceId" TEXT NOT NULL,
     "setSpec" TEXT NOT NULL,
-    "status" "HarvestStatus" NOT NULL DEFAULT 'PENDING',
+    "status" "HarvestStatus" NOT NULL DEFAULT 'IN_PROGRESS',
     "resumptionToken" TEXT,
     "recordsHarvested" INTEGER NOT NULL DEFAULT 0,
     "filesCreated" INTEGER NOT NULL DEFAULT 0,
@@ -78,10 +76,10 @@ CREATE UNIQUE INDEX "Source_code_key" ON "Source"("code");
 CREATE INDEX "Record_sourceCode_idx" ON "Record"("sourceCode");
 
 -- CreateIndex
-CREATE INDEX "Record_setSpec_idx" ON "Record"("setSpec");
+CREATE INDEX "Record_recordType_idx" ON "Record"("recordType");
 
 -- CreateIndex
-CREATE INDEX "Record_recordType_idx" ON "Record"("recordType");
+CREATE INDEX "Record_eventYear_idx" ON "Record"("eventYear");
 
 -- CreateIndex
 CREATE INDEX "Record_eventPlace_idx" ON "Record"("eventPlace");
@@ -93,19 +91,10 @@ CREATE INDEX "Person_recordId_recordYear_idx" ON "Person"("recordId", "recordYea
 CREATE INDEX "Person_surname_idx" ON "Person"("surname");
 
 -- CreateIndex
-CREATE INDEX "Person_givenName_idx" ON "Person"("givenName");
-
--- CreateIndex
-CREATE INDEX "Person_patronym_idx" ON "Person"("patronym");
-
--- CreateIndex
-CREATE INDEX "Person_surname_givenName_idx" ON "Person"("surname", "givenName");
+CREATE INDEX "Person_role_idx" ON "Person"("role");
 
 -- CreateIndex
 CREATE INDEX "Person_birthYear_idx" ON "Person"("birthYear");
-
--- CreateIndex
-CREATE INDEX "HarvestLog_status_idx" ON "HarvestLog"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "HarvestLog_sourceId_setSpec_key" ON "HarvestLog"("sourceId", "setSpec");
@@ -114,4 +103,4 @@ CREATE UNIQUE INDEX "HarvestLog_sourceId_setSpec_key" ON "HarvestLog"("sourceId"
 ALTER TABLE "Person" ADD CONSTRAINT "Person_recordId_recordYear_fkey" FOREIGN KEY ("recordId", "recordYear") REFERENCES "Record"("id", "eventYear") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "HarvestLog" ADD CONSTRAINT "HarvestLog_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "Source"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "HarvestLog" ADD CONSTRAINT "HarvestLog_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "Source"("id") ON DELETE CASCADE ON UPDATE CASCADE;

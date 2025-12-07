@@ -1,66 +1,105 @@
-// src/lib/a2a-parser.ts
+import { BaseParser, type ParserContext } from './base-parser';
+import { parseDate } from './date-parser';
+import type { A2AData, ParsedRecord, ParsedDate } from '@/types/index';
 
-import type { A2AData, ParsedRecord } from '@/types/index';
+export class A2AParser extends BaseParser {
+    parse(a2a: A2AData, context: ParserContext): ParsedRecord | null {
+        if (!a2a) return null;
 
-export function parseA2ARecord(
-    a2a: any,
-    meta: { sourceCode: string; setSpec: string; externalId: string }
-): ParsedRecord | null {
-    if (!a2a) return null;
+        const source = a2a.Source || a2a['a2a:Source'];
+        const person = a2a.Person || a2a['a2a:Person'];
+        const relation = a2a.Relation || a2a['a2a:Relation'];
+        const relationEP = a2a.RelationEP || a2a['a2a:RelationEP'];
+        const event = a2a.Event || a2a['a2a:Event'];
 
-    // Handle both namespaced (a2a:) and non-namespaced fields
-    const source = a2a.Source || a2a['a2a:Source'];
-    const person = a2a.Person || a2a['a2a:Person'];
-    const relation = a2a.Relation || a2a['a2a:Relation'];
-    const event = a2a.Event || a2a['a2a:Event'];
+        if (!source) return null;
 
-    if (!source) return null;
+        const sourceType = this.extractValue(source, 'SourceType.#text', 'a2a:SourceType', 'SourceType') || 'Unknown';
+        const recordType = this.mapRecordType(sourceType);
 
-    // Extract source type (handle namespace)
-    const sourceType = source.SourceType?.['#text'] || source['a2a:SourceType'] || 'Unknown';
-    const recordType = mapSourceType(sourceType);
+        const sourceDate = source.SourceDate || source['a2a:SourceDate'] || source.SourceIndexDate || source['a2a:SourceIndexDate'];
+        let eventDate: ParsedDate;
 
-    // Extract date (handle multiple date formats)
-    const sourceDate = source.SourceDate || source['a2a:SourceDate'] || source.SourceIndexDate || source['a2a:SourceIndexDate'];
-    let eventDate: string | undefined;
-    let eventYear: number | undefined;
-
-    if (sourceDate) {
-        // Try Date field first
-        const dateField = sourceDate.Date || sourceDate['a2a:Date'];
-        if (dateField) {
-            eventDate = dateField['#text'] || dateField;
+        if (sourceDate) {
+            eventDate = parseDate(sourceDate);
+        } else if (event) {
+            const eventDateObj = event.EventDate || event['a2a:EventDate'];
+            eventDate = parseDate(eventDateObj);
+        } else {
+            eventDate = { year: 1800, precision: 'unknown' };
         }
-        // Try From field (for index dates)
-        if (!eventDate && sourceDate.From) {
-            eventDate = sourceDate.From['#text'] || sourceDate.From || sourceDate['a2a:From'];
+
+        const sourcePlaceObj = source.SourcePlace || source['a2a:SourcePlace'];
+        const eventPlace = this.extractValue(sourcePlaceObj, 'Place.#text', 'a2a:Place', 'Place');
+
+        const persons: Array<{
+            role: string;
+            givenName?: string;
+            surname?: string;
+            patronym?: string;
+            prefix?: string;
+            age?: number;
+            occupation?: string;
+            residence?: string;
+        }> = [];
+
+        if (relationEP) {
+            const personMap = new Map<string, any>();
+
+            if (person) {
+                const personList = Array.isArray(person) ? person : [person];
+                for (const p of personList) {
+                    const pid = p['@_pid'];
+                    if (pid) {
+                        personMap.set(pid, p);
+                    }
+                }
+            }
+
+            const relationEPList = Array.isArray(relationEP) ? relationEP : [relationEP];
+            for (const rel of relationEPList) {
+                const personKeyRef = rel.PersonKeyRef || rel['a2a:PersonKeyRef'];
+                const relType = this.extractValue(rel, 'RelationType.#text', 'a2a:RelationType', 'RelationType') || 'Unknown';
+                const role = this.mapPersonRole(relType);
+
+                if (personKeyRef && personMap.has(personKeyRef)) {
+                    const personData = personMap.get(personKeyRef);
+                    const p = this.extractPerson(personData, role);
+                    if (p) persons.push(p);
+                }
+            }
+        } else if (person) {
+            const p = this.extractPerson(person, this.determineMainRole(recordType));
+            if (p) persons.push(p);
         }
-        if (!eventDate && sourceDate['a2a:From']) {
-            eventDate = sourceDate['a2a:From'];
+
+        if (relation) {
+            const relations = Array.isArray(relation) ? relation : [relation];
+            for (const rel of relations) {
+                const relPerson = rel.Person || rel['a2a:Person'];
+                const relType = this.extractValue(rel, 'RelationType.#text', 'a2a:RelationType', 'RelationType') || 'Unknown';
+                const role = this.mapPersonRole(relType);
+
+                if (relPerson) {
+                    const p = this.extractPerson(relPerson, role);
+                    if (p) persons.push(p);
+                }
+            }
         }
+
+        return {
+            externalId: context.externalId,
+            sourceCode: context.sourceCode,
+            setSpec: context.setSpec,
+            recordType,
+            eventDate,
+            eventPlace,
+            persons,
+            rawData: a2a,
+        };
     }
 
-    // Extract year
-    if (eventDate) {
-        const yearMatch = eventDate.match(/(\d{4})/);
-        if (yearMatch) eventYear = parseInt(yearMatch[1], 10);
-    }
-
-    // Fallback to event date if source date not found
-    if (!eventYear && event) {
-        const eventDateObj = event.EventDate || event['a2a:EventDate'];
-        if (eventDateObj) {
-            const year = eventDateObj.Year || eventDateObj['a2a:Year'];
-            if (year) eventYear = typeof year === 'number' ? year : parseInt(year, 10);
-        }
-    }
-
-    // Extract place
-    const sourcePlaceObj = source.SourcePlace || source['a2a:SourcePlace'];
-    const eventPlace = sourcePlaceObj?.Place?.['#text'] || sourcePlaceObj?.['a2a:Place'] || sourcePlaceObj?.Place || undefined;
-
-    // Extract persons
-    const persons: Array<{
+    private extractPerson(personData: any, role: string): {
         role: string;
         givenName?: string;
         surname?: string;
@@ -69,132 +108,37 @@ export function parseA2ARecord(
         age?: number;
         occupation?: string;
         residence?: string;
-    }> = [];
+    } | null {
+        const personName = personData.PersonName || personData['a2a:PersonName'];
+        if (!personName) return null;
 
-    // Main person
-    if (person) {
-        const p = extractPerson(person, determineMainRole(recordType));
-        if (p) persons.push(p);
-    }
+        const givenName = this.extractValue(personName, 'PersonNameFirstName.#text', 'a2a:PersonNameFirstName', 'PersonNameFirstName');
+        const surname = this.extractValue(personName, 'PersonNameLastName.#text', 'a2a:PersonNameLastName', 'PersonNameLastName');
+        const patronym = this.extractValue(personName, 'PersonNamePatronym.#text', 'a2a:PersonNamePatronym', 'PersonNamePatronym');
+        const prefix = this.extractValue(personName, 'PersonNamePrefixLastName.#text', 'a2a:PersonNamePrefixLastName', 'PersonNamePrefixLastName');
 
-    // Relations
-    if (relation) {
-        const relations = Array.isArray(relation) ? relation : [relation];
-        for (const rel of relations) {
-            const relPerson = rel.Person || rel['a2a:Person'];
-            const relType = rel.RelationType?.['#text'] || rel['a2a:RelationType'] || 'Unknown';
-            const role = mapRelationType(relType);
-
-            if (relPerson) {
-                const p = extractPerson(relPerson, role);
-                if (p) persons.push(p);
-            }
+        let age: number | undefined;
+        const ageField = personData.Age || personData['a2a:Age'];
+        if (ageField) {
+            const ageValue = ageField['#text'] || ageField;
+            age = typeof ageValue === 'number' ? ageValue : parseInt(ageValue, 10);
+            if (isNaN(age)) age = undefined;
         }
+
+        const occupation = this.extractValue(personData, 'Occupation.#text', 'a2a:Occupation', 'Occupation');
+
+        const residenceObj = personData.Residence || personData['a2a:Residence'];
+        const residence = this.extractValue(residenceObj, 'Place.#text', 'a2a:Place', 'Place');
+
+        return {
+            role,
+            givenName,
+            surname,
+            patronym,
+            prefix,
+            age,
+            occupation,
+            residence,
+        };
     }
-
-    return {
-        externalId: meta.externalId,
-        sourceCode: meta.sourceCode,
-        setSpec: meta.setSpec,
-        recordType,
-        eventYear: eventYear || 1800,
-        eventDate,
-        eventPlace,
-        persons,
-        rawData: a2a,
-    };
-}
-
-function extractPerson(personData: any, role: string): {
-    role: string;
-    givenName?: string;
-    surname?: string;
-    patronym?: string;
-    prefix?: string;
-    age?: number;
-    occupation?: string;
-    residence?: string;
-} | null {
-    // Handle namespace
-    const personName = personData.PersonName || personData['a2a:PersonName'];
-    if (!personName) return null;
-
-    const givenName = personName.PersonNameFirstName?.['#text'] ||
-        personName.PersonNameFirstName ||
-        personName['a2a:PersonNameFirstName'];
-
-    const surname = personName.PersonNameLastName?.['#text'] ||
-        personName.PersonNameLastName ||
-        personName['a2a:PersonNameLastName'];
-
-    const patronym = personName.PersonNamePatronym?.['#text'] ||
-        personName.PersonNamePatronym ||
-        personName['a2a:PersonNamePatronym'];
-
-    const prefix = personName.PersonNamePrefixLastName?.['#text'] ||
-        personName.PersonNamePrefixLastName ||
-        personName['a2a:PersonNamePrefixLastName'];
-
-    // Extract age
-    let age: number | undefined;
-    const ageField = personData.Age || personData['a2a:Age'];
-    if (ageField) {
-        const ageValue = ageField['#text'] || ageField;
-        age = typeof ageValue === 'number' ? ageValue : parseInt(ageValue, 10);
-        if (isNaN(age)) age = undefined;
-    }
-
-    // Extract occupation
-    const occupation = personData.Occupation?.['#text'] ||
-        personData.Occupation ||
-        personData['a2a:Occupation'];
-
-    // Extract residence
-    const residenceObj = personData.Residence || personData['a2a:Residence'];
-    const residence = residenceObj?.Place?.['#text'] ||
-        residenceObj?.['a2a:Place'] ||
-        residenceObj?.Place;
-
-    return {
-        role,
-        givenName,
-        surname,
-        patronym,
-        prefix,
-        age,
-        occupation,
-        residence,
-    };
-}
-
-function mapSourceType(sourceType: string): string {
-    const lower = sourceType.toLowerCase();
-    if (lower.includes('geboorte') || lower.includes('birth')) return 'BS_BIRTH';
-    if (lower.includes('huwelijk') || lower.includes('marriage')) return 'BS_MARRIAGE';
-    if (lower.includes('overlijden') || lower.includes('death')) return 'BS_DEATH';
-    if (lower.includes('doop') || lower.includes('baptism')) return 'DTB_BAPTISM';
-    if (lower.includes('trouw') || lower.includes('marriage')) return 'DTB_MARRIAGE';
-    if (lower.includes('begraaf') || lower.includes('burial')) return 'DTB_BURIAL';
-    if (lower.includes('bevolking') || lower.includes('population')) return 'POPULATION_REGISTER';
-    return 'OTHER';
-}
-
-function mapRelationType(relationType: string): string {
-    const lower = relationType.toLowerCase();
-    if (lower.includes('vader') || lower.includes('father')) return 'FATHER';
-    if (lower.includes('moeder') || lower.includes('mother')) return 'MOTHER';
-    if (lower.includes('bruidegom') || lower.includes('groom')) return 'GROOM';
-    if (lower.includes('bruid') || lower.includes('bride')) return 'BRIDE';
-    if (lower.includes('getuige') || lower.includes('witness')) return 'WITNESS';
-    if (lower.includes('kind') || lower.includes('child')) return 'CHILD';
-    if (lower === 'geregistreerde') return 'REGISTRANT';
-    return 'OTHER';
-}
-
-function determineMainRole(recordType: string): string {
-    if (recordType === 'BS_BIRTH' || recordType === 'DTB_BAPTISM') return 'CHILD';
-    if (recordType === 'BS_DEATH' || recordType === 'DTB_BURIAL') return 'DECEASED';
-    if (recordType === 'BS_MARRIAGE' || recordType === 'DTB_MARRIAGE') return 'GROOM';
-    if (recordType === 'POPULATION_REGISTER') return 'REGISTRANT';
-    return 'OTHER';
 }
