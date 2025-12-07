@@ -22,16 +22,54 @@
             }
         },
         {
-            "code": "NL_NATIONAAL_ARCHIEF",
-            "name": "Nationaal Archief",
-            "oaiUrl": "https://www.nationaalarchief.nl/oai/oai",
-            "website": "https://www.nationaalarchief.nl",
-            "region": "Zuid-Holland",
-            "city": "Den Haag",
-            "estimatedRecords": 20000000,
+            "code": "NL_BHIC",
+            "name": "Brabants Historisch Informatie Centrum",
+            "oaiUrl": "https://api.bhic.nl/oai-pmh",
+            "website": "https://www.bhic.nl",
+            "region": "Noord-Brabant",
+            "city": "Den Bosch",
+            "estimatedRecords": 8000000,
             "coverage": {
                 "dtb": {
-                    "from": 1550,
+                    "from": 1600,
+                    "to": 1811
+                },
+                "bs": {
+                    "from": 1811,
+                    "to": 1940
+                }
+            }
+        },
+        {
+            "code": "NL_GELDERS_ARCHIEF",
+            "name": "Gelders Archief",
+            "oaiUrl": "https://www.geldersarchief.nl/oai",
+            "website": "https://www.geldersarchief.nl",
+            "region": "Gelderland",
+            "city": "Arnhem",
+            "estimatedRecords": 10000000,
+            "coverage": {
+                "dtb": {
+                    "from": 1600,
+                    "to": 1811
+                },
+                "bs": {
+                    "from": 1811,
+                    "to": 1940
+                }
+            }
+        },
+        {
+            "code": "NL_TRESOAR",
+            "name": "Tresoar",
+            "oaiUrl": "https://www.tresoar.nl/oai",
+            "website": "https://www.tresoar.nl",
+            "region": "Friesland",
+            "city": "Leeuwarden",
+            "estimatedRecords": 6000000,
+            "coverage": {
+                "dtb": {
+                    "from": 1600,
                     "to": 1811
                 },
                 "bs": {
@@ -60,25 +98,6 @@
             }
         },
         {
-            "code": "NL_GELDERS_ARCHIEF",
-            "name": "Gelders Archief",
-            "oaiUrl": "https://www.geldersarchief.nl/oai/",
-            "website": "https://www.geldersarchief.nl",
-            "region": "Gelderland",
-            "city": "Arnhem",
-            "estimatedRecords": 10000000,
-            "coverage": {
-                "dtb": {
-                    "from": 1600,
-                    "to": 1811
-                },
-                "bs": {
-                    "from": 1811,
-                    "to": 1940
-                }
-            }
-        },
-        {
             "code": "NL_REGIONAAL_ARCHIEF_LEIDEN",
             "name": "Regionaal Archief Leiden",
             "oaiUrl": "https://www.erfgoedleiden.nl/oai/",
@@ -89,44 +108,6 @@
             "coverage": {
                 "dtb": {
                     "from": 1575,
-                    "to": 1811
-                },
-                "bs": {
-                    "from": 1811,
-                    "to": 1940
-                }
-            }
-        },
-        {
-            "code": "NL_BHIC",
-            "name": "Brabants Historisch Informatie Centrum",
-            "oaiUrl": "https://www.bhic.nl/oai/",
-            "website": "https://www.bhic.nl",
-            "region": "Noord-Brabant",
-            "city": "Den Bosch",
-            "estimatedRecords": 8000000,
-            "coverage": {
-                "dtb": {
-                    "from": 1600,
-                    "to": 1811
-                },
-                "bs": {
-                    "from": 1811,
-                    "to": 1940
-                }
-            }
-        },
-        {
-            "code": "NL_TRESOAR",
-            "name": "Tresoar",
-            "oaiUrl": "https://www.tresoar.nl/oai/",
-            "website": "https://www.tresoar.nl",
-            "region": "Friesland",
-            "city": "Leeuwarden",
-            "estimatedRecords": 6000000,
-            "coverage": {
-                "dtb": {
-                    "from": 1600,
                     "to": 1811
                 },
                 "bs": {
@@ -184,6 +165,25 @@
             "coverage": {
                 "dtb": {
                     "from": 1610,
+                    "to": 1811
+                },
+                "bs": {
+                    "from": 1811,
+                    "to": 1940
+                }
+            }
+        },
+        {
+            "code": "NL_WEST_BRABANTS_ARCHIEF",
+            "name": "West-Brabants Archief",
+            "oaiUrl": "https://api.memorix.io/oai-pmh/v1/west-brabants-archief",
+            "website": "https://www.west-brabants-archief.nl",
+            "region": "Noord-Brabant",
+            "city": "Bergen op Zoom",
+            "estimatedRecords": 3000000,
+            "coverage": {
+                "dtb": {
+                    "from": 1600,
                     "to": 1811
                 },
                 "bs": {

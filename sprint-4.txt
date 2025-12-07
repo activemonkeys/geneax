@@ -1,0 +1,174 @@
+# Geneax - Genealogische Database
+
+Centrale database van Nederlandse genealogische data met uniforme toegang tot alle archieven.
+
+## Sprint 2: Archive Discovery & Registry System ✅
+
+### Nieuwe Features
+
+- **Archive Registry**: Database systeem voor alle Nederlandse archieven
+- **OAI-PMH Discovery**: Automatisch archieven scannen en configureren
+- **Multi-level Status Tracking**: Archive → Dataset → Harvest Session
+- **Parser Registry**: Pluggable parser systeem voor verschillende XML varianten
+- **Web UI**: Registry Dashboard voor archief management
+
+### Database Schema
+```
+ArchiveRegistry (archieven)
+  ├── code (PK)
+  ├── name
+  ├── oaiUrl
+  ├── parserType
+  ├── parserConfig (JSONB)
+  ├── metadata (JSONB)
+  └── datasets[]
+
+ArchiveDataset (sets binnen archief)
+  ├── id (PK)
+  ├── archiveCode (FK)
+  ├── setSpec
+  ├── status
+  └── harvestSessions[]
+
+HarvestSession (harvest runs)
+  ├── id (PK)
+  ├── datasetId (FK)
+  ├── status
+  ├── recordsProcessed
+  ├── errors (JSONB)
+  └── stats (JSONB)
+```
+
+### Tech Stack
+
+- Next.js 16 + React 19
+- PostgreSQL 17 + Prisma 7
+- TypeScript
+- TailwindCSS 4
+- shadcn/ui components
+- xml2js voor XML parsing
+
+### Setup
+
+1. **Database migratie**
+```bash
+pnpm db:migrate
+pnpm db:generate
+```
+
+2. **Registry vullen**
+```bash
+pnpm registry:populate
+```
+
+3. **Archieven scannen**
+```bash
+# Test één endpoint
+pnpm registry:test-endpoint https://api.openarch.nl/oai-pmh/ NL_OPEN_ARCHIEVEN
+
+# Scan alle archieven (optioneel)
+pnpm registry:scan-all
+```
+
+4. **Start development server**
+```bash
+pnpm dev
+```
+
+### UI Routes
+
+- `/` - Homepage met overzicht
+- `/registry` - Archief registry overzicht
+- `/registry/[code]` - Archief detail pagina met datasets
+- `/stats` - Database statistieken
+
+### Scripts
+
+**Registry Management:**
+- `pnpm registry:populate` - Laad archieven uit sources/registry.json
+- `pnpm registry:scan-all` - Scan alle archieven
+- `pnpm registry:test-endpoint <URL> <CODE>` - Test één endpoint
+
+**Database:**
+- `pnpm db:studio` - Open Prisma Studio
+- `pnpm db:migrate` - Nieuwe migratie
+- `pnpm stats` - Database statistieken
+
+**Development:**
+- `pnpm dev` - Start Next.js dev server
+- `pnpm typecheck` - Type checking
+- `pnpm lint` - Lint code
+
+### Project Structuur
+```
+src/
+├── actions/
+│   └── registry-actions.ts        # Server Actions
+├── app/
+│   ├── registry/
+│   │   ├── page.tsx               # Registry overzicht
+│   │   └── [code]/page.tsx        # Archief detail
+│   ├── stats/page.tsx             # Statistieken
+│   └── page.tsx                   # Homepage
+├── components/
+│   ├── ui/                        # shadcn components
+│   ├── navigation.tsx             # Navigatie
+│   └── registry/
+│       ├── archive-list.tsx       # Archief grid
+│       ├── archive-card.tsx       # Archief card
+│       ├── archive-header.tsx     # Detail header
+│       ├── dataset-list.tsx       # Dataset tabel
+│       ├── status-badge.tsx       # Status badge
+│       └── archive-stats.tsx      # Statistieken
+├── discovery/
+│   ├── oai-client.ts              # OAI-PMH client
+│   ├── scan-endpoint.ts           # Endpoint scanner
+│   ├── analyze-structure.ts       # XML analyse
+│   └── generate-config.ts         # Config generator
+├── lib/
+│   ├── archive-registry.ts        # CRUD archieven
+│   ├── harvest-session.ts         # Harvest tracking
+│   ├── parsers/
+│   │   ├── registry.ts            # Parser registry
+│   │   └── base-parser.ts         # Base parser
+│   └── utils.ts                   # Utilities
+├── scripts/
+│   ├── populate-registry.ts       # Import registry.json
+│   ├── scan-all.ts                # Scan alle archieven
+│   └── test-endpoint.ts           # Test endpoint
+└── types/
+    ├── registry.ts                # Archive types
+    ├── harvest.ts                 # Harvest types
+    ├── parser.ts                  # Parser types
+    └── index.ts                   # Type exports
+
+sources/
+├── registry.json                  # Master lijst archieven
+└── {archive-code}/
+    ├── config.json                # Gegenereerde configuratie
+    ├── identify.json              # OAI-PMH Identify
+    ├── sets.json                  # Beschikbare sets
+    ├── sample-records.json        # Sample records
+    └── analysis-report.md         # XML structuur analyse
+```
+
+### Huidige Status
+
+- ✅ 11 archieven geregistreerd
+- ✅ 1 archief succesvol gescand (NL_OPEN_ARCHIEVEN met 86 datasets)
+- ✅ Config + analysis automatisch gegenereerd
+- ✅ Web UI voor registry management
+- ✅ Status tracking per archief
+
+### Volgende Stappen
+
+- [ ] SSL certificate handling voor BHIC
+- [ ] Meer werkende archieven toevoegen
+- [ ] Multi-source harvester implementeren
+- [ ] Archive-specific parsers
+- [ ] Deduplicatie logica
+- [ ] Harvest monitoring dashboard
+
+### Ontwikkeling
+
+Built with ❤️ for Nederlandse genealogische gemeenschap
